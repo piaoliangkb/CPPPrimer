@@ -52,7 +52,7 @@ iostream包含了输入流和输出流，术语"stream"表达的是：随着时�
    ```
    相当于
    ```cpp
-   (std::cout << "Enter two numbers" )<< std::endl;
+   (std::cout << "Enter two numbers" ) << std::endl;
    ```
 
 2. endl是一个被称为操纵符的特殊值。写入endl的作用是结束当前行，并将与设备关联的缓冲区中的内容刷到设备中。
@@ -125,7 +125,7 @@ zl@LAPTOP-ZL:~/cppprimer/chapter1$ ./a.out <1-20data.txt
 
 一点问题:
 
-Ubuntu180.4LTS输入outputfilename时，出现perssiondenied.
+Ubuntu18.04LTS输入outputfilename时，出现Perssion Denied
 
 ```bash
 zl@LAPTOP-ZL:~/cppprimer/chapter1$ sudo ./a.out <1-20data.txt >output.txt
