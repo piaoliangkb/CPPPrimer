@@ -144,3 +144,82 @@ int main()
 std::cout << "a really long string "
              "that spans two lines" << std::endl;
 ```
+
+#### 转义序列
+
+有两类字符串不能直接使用：不可打印的字符串，比如退格或者其他控制字符，因为他们没有可视的图符；另一类是在C++语言中有特殊含义的字符（单引号，双引号，问号，反斜线），在这些情况下需要用到转义序列。
+
+C++规定的转义序列包括如下：
+
+转义序列 | 表示
+---|---
+换行符 | \n
+纵向制表符 | \v
+横向制表符 | \t
+反斜线 | \\\
+回车符 | \r
+退格符 | \b
+问号 | \\?
+进纸符 | \f
+报警符 | \a
+双引号 | \\"
+单引号 | \\'
+
+泛化的转义序列：
+
+- \x后边紧跟一个或多个16进制数字。例如<code>\x1234</code>表示一个16位的字符，该字符由这4个十六进制数所对应的比特唯一确定。因为大多数辑器的char型数据占8位，所以上边这个例子可能会报错。
+
+- \后边紧跟一个或两个或三个八进制数字。如果反斜线后边的八进制数字超过三个，只有前三个数字与\构成转义序列。例如 <code>\1234</code> 表示两个字符，即八进制数123对应的字符以及字符4.
+
+#### 指定字面值的类型
+
+```cpp
+L'a' // 宽字符型字面值，类型是'wchar_t'
+u8"hi!" // utf-8字符型字面值，utf-8是用8位编码一个Unicode字符
+42NLL // 无符号整数型字面值，类型是unsigned long long
+1E-3F // 单精度浮点型字面值，类型是float
+3.14159L // 拓展精度浮点型字面值，类型是long double 
+```
+
+前缀类型：
+
+前缀 | 含义 | 类型
+--- | --- | ---
+u | Unicode16字符 | char16_t
+U | Unicode32字符 | char32_t
+L | 宽字符 | wchar_t
+u8 | UTF-8(仅用于字符串字面常量) | char
+
+后缀类型：
+
+整形字面型后缀 | 最小匹配类型
+--- | --- 
+u or U | unsigned 
+l or L | long 
+ll or LL | long long
+
+以U为后缀的十进制数，八进制数或十六进制数都将从unsigned int， unsigned long， unsigned long long中选择能匹配的空间最小的一个作为其数据类型。
+
+
+浮点型字面型后缀 | 类型
+--- | ---
+f or F | float
+l or L | long double
+
+#### 练习2.5
+
+> 指出下面字面值的字符类型  
+> (a) 'a', L'a', "a", L"a"  
+> (b) 10, 10u, 10L, 10uL, 012, 0xC  
+> (c) 3.14, 3.14f, 3.14L  
+> (d) 10, 10u, 10., 10e-2
+
+答案：
+
+(a)字符字面值(character literal)，宽字符字面值(wide character literal)，字符串字面值(string literal)，宽字符字符串字面值(string wide character literal)  
+
+(b)十进制(decimal)，无符号十进制(unsigned decimal)，长整形十进制(long decimal)，无符号长整形十进制(unsigned long decimal)，八进制(octal)，十六进制(hexadecimal)  
+
+(c)double， float， long double
+
+(d)十进制，无符号十进制，double， double
