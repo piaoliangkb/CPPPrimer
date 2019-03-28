@@ -41,6 +41,9 @@
             - [指向指针的引用](#指向指针的引用)
     - [2.4 const限定符](#24-const限定符)
         - [2.4.1 const的引用](#241-const的引用)
+            - [初始化和对const的引用](#初始化和对const的引用)
+            - [对const的引用可以是一个并非const的对象](#对const的引用可以是一个并非const的对象)
+        - [2.4.2 指针和const](#242-指针和const)
 
 <!-- /TOC -->
 
@@ -473,15 +476,15 @@ int *p3 = NULL;
 
 ```cpp
 int i = 42;
-int *pi = 0; // pi被初始化，但是不指向任何对象
-int *pi2 = &i; // pi2被初始化，指向i
-int *pi3; // 如果pi3被定义在块内，那么pi3的值无法确定
+int *pi = 0;      // pi被初始化，但是不指向任何对象
+int *pi2 = &i;    // pi2被初始化，指向i
+int *pi3;         // 如果pi3被定义在块内，那么pi3的值无法确定
 
-pi3 = pi2; // pi3和pi2指向同一个对象pi2
-pi2 = 0; // pi2不指向任何对象
+pi3 = pi2;        // pi3和pi2指向同一个对象pi2
+pi2 = 0;          // pi2不指向任何对象
 
-pi = &ival; //pi的值被改变，现在指向ival
-*pi = 0; // ival的值被改变，pi不变
+pi = &ival;       //pi的值被改变，现在指向ival
+*pi = 0;          // ival的值被改变，pi不变
 ```
 
 - “=”的左操作数可以是*p，也可以是p。
@@ -521,10 +524,10 @@ pv = pd;
 ```cpp
 int i = 42;
 int *p;
-int *&r = p; // r是对指针p的引用
+int *&r = p;         // r是对指针p的引用
 
-r = &i; // r引用了指针p，所以给r赋值&i就是把指针p指向i
-*r = 0; // 解引用r得到i，也就是p指向的对象，所以i的值被改为0
+r = &i;              // r引用了指针p，所以给r赋值&i就是把指针p指向i
+*r = 0;              // 解引用r得到i，也就是p指向的对象，所以i的值被改为0
 ```
 
 上述例子中，我们要理解r的值是什么，最简单的办法就是从右向左阅读r的定义。离变量名最近的符号有最直接的影响，此处是&符号，表示r是一个引用；符号*表示r引用的是一个指针；根据声明符指出r引用的是一个int型指针。
@@ -558,8 +561,71 @@ extern const int bufsize = 1024;
 
 ```cpp
 const int a = 1024;
-const int &r = a; // true
-r = 42; // false, 不能修改const的值
-int &r2 = a; // false，试图让一个非const引用指向一个const对象
+const int &r = a;       // true
+r = 42;                 // false, 不能修改const的值
+int &r2 = a;            // false，试图让一个非const引用指向一个const对象
 ```
 
+#### 初始化和对const的引用
+
+**2.3.1节**提到，引用的类型必须和其引用的对象一致，但是有两个例外。一个是在初始化常量引用的时候，允许用任意表达式作为初始值，只要表达式的值可以转换成引用的类型即可。
+
+```cpp
+int i = 42;
+const int &r1 = i;     // 允许将const int&绑定到一个普通的int对象上
+const int &r2 = 42;    // 正确，r2是一个常量引用
+const int &r3 = r1*2;  // 正确，r3是一个常量引用
+int &r4 = r1*2;        // 错误，r4是一个普通的非常量引用
+```
+
+当一个常量引用被绑定到另一种类型上时，发生了什么：
+
+```cpp
+double dval = 3.14;
+const int &ri = dval;
+```
+
+此处ri引用了一个int型的数，但是dval却是一个双精度浮点数而非整数，为了确保让ri绑定一个整数，编译器把上述代码变成了如下形式：
+
+```cpp
+const int temp = dval;  // 由双精度浮点数生成一个临时的整形变量
+const int &ri = temp;   // 让ri绑定到这个临时量
+```
+
+那么当ri不是常量时，即不加const，那么就会允许对ri赋值。然而此时绑定的对象时temp而不是dval，不合理，所以C++把这种行为归为非法。
+
+#### 对const的引用可以是一个并非const的对象
+
+```cpp
+int main()
+{
+    int i = 42;
+    int &r1 = i;
+    const int &r2 = i;
+
+    cout << r2 << endl;
+    r1 = 40;
+    cout << r2 << endl;
+
+    return 0;
+}
+// output is : 42 40
+```
+
+上述例子中常量引用r2绑定了i，修改i值的话，r2的值也会变化.
+
+### 2.4.2 指针和const
+
+指向常量的指针不能用于改变其所指对象的值，但没有规定指向对象的值不能通过其他方式改变。
+
+```cpp
+const double pi = 3.14;
+double *ptr = &pi;        // false ptr是一个普通指针
+const double *cptr = &pi; // true
+*cptr = 42;               // false
+
+double dval = 3.14;
+cptr = &dval;             // true
+```
+
+指向常量的指针不规定其所指的对象必须是一个常量
