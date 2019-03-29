@@ -44,6 +44,14 @@
             - [初始化和对const的引用](#初始化和对const的引用)
             - [对const的引用可以是一个并非const的对象](#对const的引用可以是一个并非const的对象)
         - [2.4.2 指针和const](#242-指针和const)
+            - [const指针](#const指针)
+            - [练习2.27](#练习227)
+            - [练习2.28](#练习228)
+        - [2.4.3 顶层const(top level const)和底层const(low level const)](#243-顶层consttop-level-const和底层constlow-level-const)
+        - [2.4.4 constexpr和常量表达式](#244-constexpr和常量表达式)
+            - [constexpr变量](#constexpr变量)
+            - [字面值类型](#字面值类型)
+            - [constexpr和指针](#constexpr和指针)
 
 <!-- /TOC -->
 
@@ -628,4 +636,91 @@ double dval = 3.14;
 cptr = &dval;             // true
 ```
 
-指向常量的指针不规定其所指的对象必须是一个常量
+指向常量的指针不规定其所指的对象必须是一个常量。
+
+#### const指针
+
+常量指针(const pointer)必须初始化，把*放在const关键字之前用以说明指针是一个常量，即不变的是指针本身的值而非指针指向的值。
+
+```cpp
+int num = 0;
+int *coust curNum = &num;
+
+const double pi = 3.14;
+const double *const pip = &pi; // pip是一个指向常量对象的常量指针
+```
+
+#### 练习2.27
+
+```cpp
+int i = -1, &r = 0;          // 不合法，非常量引用必须引用到相关的对象
+int *const p2 = &i2;         // 合法，p2是一个常量指针
+const int i = -1, &r = 0;    // 合法，i为常量-1，r为常量引用，可以为0；非常量引用必须引用相关的对象
+const int *const p3 = &i2;   // 合法，p3是一个指向常量的常量指针
+const int *p1 = &i2;         // 合法，p1是一个指向常量的指针
+const int &const r2;         // 不合法，引用不能加const
+const int i2 = i, &r = i;    // 合法，i2为一个常量，r为一个常量引用
+```
+
+> const在前表示指针指向或者引用的对象为常量，const在指针后表示指针为常量指针
+
+#### 练习2.28
+
+```cpp
+int i, *const cp;           // 不合法，cp为常量指针必须被初始化
+int *p1, *const p2;         // 不合法，p2为常量指针，必须被初始化
+const int ic, &r = ic;      // 不合法，ic为常量，必须被初始化
+const int *const p3;        // 不合法，p3为指向常量的常量指针，必须被初始化
+const int *p;               // 合法，p为指向常量的指针
+```
+
+### 2.4.3 顶层const(top level const)和底层const(low level const)
+
+顶层表示对象（指针本身）是个常量，底层表示指针指向的对象是个常量。
+
+```cpp
+int i = 0;
+int *const p1 = &1;          // 顶层const，指针p1的值不能被修改
+const int ci = 42;           // 顶层const，ci的值不能被修改
+const int *p2 = &ci;         // 底层const，指针p2的值可以被修改
+const int *const p3 = p2;    // 右边的const是顶层const，左边的const是底层const
+const int &r = ci;           // 用于声明引用的const都是底层const
+```
+
+在执行对象的拷贝操作时，拷入和拷出的对象必须具有相同的底层const资格，或者两个对象能够进行数据转化。非常量可以转化成常量。
+
+### 2.4.4 constexpr和常量表达式
+
+常量表达式(const expression)是指值不会改变并且在编译过程中就能得到计算结果的表达式。字面值属于常量表达式。
+
+```cpp
+const int max_file = 20;  // 是常量表达式
+const int limit = max_file +1; // 是常量表达式
+int staff_size = 3; // 不是常量表达式
+const int sz = get_size(); // 不是常量表达式
+```
+
+#### constexpr变量
+
+C++11的新标准规定，允许将变量声明为<code>constexpr</code>类型以便由编译器来验证变量的值是否为一个常量表达式。声明为constexpr的值一定是一个常量，而且必须用常量表达式初始化。
+
+```cpp
+constexpr int mf = 20;    // 20是常量表达式
+constexpr int limit = mf+1;
+constexpr int sz = size(); // 当size是一个constexpr函数时，这才是一条正确的声明语句。具体看6.5.2节
+```
+
+#### 字面值类型
+
+截至目前，算术类型、引用、指针都属于字面值类型。
+
+尽管指针和引用都可以定义成constexpr，但是一个constexpr指针的初始化必须是nullptr或者0，或者是存储于某个固定地址中的对象（函数体之内的变量地址不固定，函数体制外地址固定不变）。
+
+#### constexpr和指针
+
+如果在constexpr生命中定义了一个指针，那么限定符constexpr只对指针起作用，与指针所指的对象无关。
+
+```cpp
+const int *p = nullptr;        // p是一个指向整数常量的指针
+constexpr int *q = nullptr;    // q是一个指向整数的常量指针，顶层const
+```
