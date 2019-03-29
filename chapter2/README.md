@@ -52,6 +52,14 @@
             - [constexpr变量](#constexpr变量)
             - [字面值类型](#字面值类型)
             - [constexpr和指针](#constexpr和指针)
+    - [2.5 类型](#25-类型)
+        - [2.5.1 类型别名](#251-类型别名)
+        - [2.5.2 auto](#252-auto)
+            - [练习2.35](#练习235)
+        - [2.5.3 decltype类型指示符](#253-decltype类型指示符)
+            - [decltype和auto的不同](#decltype和auto的不同)
+            - [decltype和引用](#decltype和引用)
+    - [2.6 自定义数据结构](#26-自定义数据结构)
 
 <!-- /TOC -->
 
@@ -724,3 +732,108 @@ constexpr int sz = size(); // 当size是一个constexpr函数时，这才是一�
 const int *p = nullptr;        // p是一个指向整数常量的指针
 constexpr int *q = nullptr;    // q是一个指向整数的常量指针，顶层const
 ```
+
+## 2.5 类型
+
+### 2.5.1 类型别名
+
+定义类型别名的两种方式：
+
+- 使用关键字**typedef**
+
+```cpp
+typedef double wages;
+typedef wages base, *p;  // base是double的同义词，p是double*的同义词
+```
+
+- 使用别名声明(alias declaration)
+
+```cpp
+using SI = Sales_item; // SI是Sales_item的同义词
+```
+
+>注：不要把别名替换成他本来的样子去理解代码
+
+### 2.5.2 auto
+
+auto让编译器通过初始值来推断变量的类型，所以auto定义的变量必须有初始值。
+
+当引用被用作初始值时，真正参与初始化的其实是引用对象的值，此时编译器引用对象的类型作为auto的类型：
+
+```cpp
+int i = 0, &r = i;
+auto a = r;
+```
+
+这时，a是一个int类型。
+
+auto一般会忽略掉顶层const(对象本身是个常量)，底层const一般会保存下来，例如当初始值是一个指向常量的指针时：
+
+```cpp
+const int ci = i, &cr = ci;
+auto b = ci; // b是一个整数，顶层const被忽略掉
+auto c = cr; // c是一个整数，cr是对ci的引用，而ci是一个顶层const
+auto d = &i; // d是一个整形指针
+auto e = &ci; // e是一个指向整型常量的指针(对常数对象取地址是一种底层const)
+```
+
+如果希望推断出的auto类型是一个顶层const：
+
+```cpp
+const auto f = ci;
+```
+
+此外还可以将引用的类型设置为auto，原来的初始化规则仍然适用：
+
+```cpp
+auto &g = ci; // g是一个整形常量引用，绑定到ci
+auto &h = 42; // 错误，不能将非常量引用绑定到字面值，需要在前边加const
+const auto *j = 43;  // 正确
+```
+
+#### 练习2.35
+
+```cpp
+const int i = 42;  // const int
+auto j = i;        // int
+const auto &k = i; // 对常量的引用
+auto *p =  &i;     // 对常量对象取地址是底层const，保存，const int*
+
+const auto j2 = i, &k2 = i; // const int, const int&
+```
+
+### 2.5.3 decltype类型指示符
+
+类型说明符**deceltype**的作用是选择并返回操作数的数据类型。在这个过程中，编译器分析表达式的值并得到它的类型，缺不实际计算表达式的值：
+
+```cpp
+decltype(f()) sum = x; // sum的类型就是函数f()的返回类型
+```
+
+#### decltype和auto的不同
+
+- decltype使用的表达式如果是一个变量，那么decltype返回该变量的类型。
+- auto一般会忽略掉顶层const，底层const会保留下来。
+
+#### decltype和引用
+
+decltype的结果可以是引用类型
+
+```cpp
+int i = 42, *p = &i, &r = i;
+decltype(r+0) b;    // 加法的结果是int，因此b是一个未初始化的int
+decltype(*p) c;     // 错误，c是一个int&，必须被初始化
+```
+
+如果表达式的内容是解引用操作，那么decltype将得到引用类型。
+
+**解引用指针可以得到指针所指的对象，而且还能给这个对象赋值。因此decltype(*p)的结果类型就是int&，而不是int。**
+
+**对于左值表达式或者带括号的表达式，decltype的结果永远是引用。而decltype(v)只有当v本身就是一个引用的时候结果才是引用。**
+
+参考资料：
+
+- https://stackoverflow.com/questions/25312225/c-why-decltype-this-returns-a-reference
+- https://www.cnblogs.com/QG-whz/p/4952980.html
+
+## 2.6 自定义数据结构
