@@ -60,6 +60,8 @@
             - [decltype和auto的不同](#decltype和auto的不同)
             - [decltype和引用](#decltype和引用)
     - [2.6 自定义数据结构](#26-自定义数据结构)
+        - [2.6.3 使用自己的头文件](#263-使用自己的头文件)
+            - [预处理器](#预处理器)
 
 <!-- /TOC -->
 
@@ -837,3 +839,90 @@ decltype(*p) c;     // 错误，c是一个int&，必须被初始化
 - https://www.cnblogs.com/QG-whz/p/4952980.html
 
 ## 2.6 自定义数据结构
+
+### 2.6.3 使用自己的头文件
+
+头文件通常包含那些只能被定义一次的实体，如类，const和constexpr变量。
+
+有时候需要对头文件做适当的处理，使其遇到多次包含的情况也能安全和正常的工作。
+
+#### 预处理器
+
+确保头文件多次包含仍能安全工作的常用技术是预处理器。预处理器是在编译之前执行的一段程序。<code>#include</code>就是一项与处理功能。当预处理器看到<code>#include</code>标记时，就会用指定的头文件内容代替<code>#include</code>。
+
+另一个预处理功能是**头文件保护符(header guard)**.
+
+- <code>#define</code>指令把一个名字设定为预处理变量
+- <code>#ifdef</code>当且仅当变量已定义时为真
+- <code>#ifndef</code>当且仅当变量未定义时为真
+- 一旦检查结果为真，执行后续操作直到<code>#endif</code>指令为止
+
+整个程序中预处理变量包括头文件保护符必须唯一，通常的做法是基于头文件中类的名字来构建保护符的名字。
+
+- 头文件即使没有被包含在任何头文件中，也应该设置保护符。习惯加上！
+
+例如：
+
+```cpp
+// file1.h
+class file1 {
+};
+
+// file2.h
+#include "file1.h"
+class file2 {
+};
+
+// file3.h
+#include "file1.h"
+#include "file2.h"
+```
+
+这时，file3.h文件展开式这样的：
+
+```cpp
+// file1.h展开的内容
+class file1 {
+};
+// file2.h展开的内容
+class file1 {
+};
+class file2 {
+};
+```
+
+这时，file1类就被重定义了。需要给每个文件加上头文件保护符：
+
+```cpp
+// file1.h
+#ifndef FILE1_H
+#define FILE1_H
+
+class file1{};
+
+#endif
+```
+
+```cpp
+// file2.h
+#ifndef FILE2_H
+#define FILE2_H
+
+#include "file1.h"
+class file2 {};
+
+#endif
+```
+
+```cpp
+// file3.h
+#ifndef FILE3_H
+#define FILE3_H
+
+#include "file1.h"
+#include "file2.h"
+
+#endif
+```
+
+此时展开file3.h文件，<code>FILE1_H</code>只会被定义一次，就不会出现重定义错误了。
