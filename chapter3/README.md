@@ -16,6 +16,12 @@
             - [使用for语句打印每个字符](#使用for语句打印每个字符)
             - [使用for语句修改每个字符](#使用for语句修改每个字符)
             - [使用下标执行迭代](#使用下标执行迭代)
+    - [3.3 vector](#33-vector)
+        - [3.3.1 定义和初始化vector对象](#331-定义和初始化vector对象)
+            - [列表初始化vector对象](#列表初始化vector对象)
+            - [创建指定数量的元素](#创建指定数量的元素)
+            - [值初始化](#值初始化)
+            - [列表初始值还是元素数量](#列表初始值还是元素数量)
 
 <!-- /TOC -->
 
@@ -183,3 +189,93 @@ for (decltype(s.zize()) index = 0; index != s.size() && !isspace(s[index]); ++in
     s[index] = toupper(s[index]);
 }
 ```
+
+## 3.3 vector
+
+标准库类型<code>vector</code>表示对象的集合，要想使用vector，必须包含头文件：
+
+```cpp
+#include <vector>
+using std::vector;
+```
+
+vector是一个**类模板**，编译器根据模板创建类或函数的过程称为实例化，当使用模板时，需要指出编译器应把类或函数实例化成何种类型：
+
+以vector为例
+
+```cpp
+vector<int> ivec;                // ivec保存int类型的对象
+vector<vector<string>> file;     // file保存vector<string>类型的对象
+```
+
+vector能容纳绝大多数对象作为其元素，因为引用不是对象，所以不存在包含引用的vector。
+
+### 3.3.1 定义和初始化vector对象
+
+初始化vector对象的方法：
+
+方法 | 简介
+--- | ---
+vector<T> v1 | v1是一个空vector，元素为类型T，执行默认初始化
+vector<T> v2(v1) | v2中包含有v1所有元素的副本
+vector<T> v2 = v1 | 等价于v2(v1)
+vector<T> v3(n, val) | v3包含了n个重复的元素，每个元素的值都为val
+vector<T> v4(n) | v4包含了n个执行了值初始化的对象，经过测试值为0
+vector<T> v5{a, b, c, ...} | v5包含了初始值个数的元素，并赋初值
+vector<T> v5 = {a, b, c, ...} | 同上
+
+<code>v4(n)</code>test:
+
+```cpp
+#include <vector>
+#include <iostream>
+
+using namespace std;
+
+int main()
+{
+    vector<int> v(10);
+    for (int i=0;i<10;++i)
+        cout << v[i] << " ";
+    return 0;
+}
+// output is : 0 0 0 0 0 0 0 0 0 0 
+```
+
+#### 列表初始化vector对象
+
+使用花括号：
+
+```cpp
+vector<string> articles = {"a", "an", "the"};
+// or
+vector<string> articles{"a", "an", "the"};
+```
+
+#### 创建指定数量的元素
+
+```cpp
+vector<int> ivec(10, -1);
+vector<string> s(10, "hi!");
+```
+
+#### 值初始化
+
+可以只提供vector对象容纳的元素数量而略去其初始值。此时库会创建一个**值初始化的**元素初值，并把他赋给容器中的所有元素。
+
+例如：
+
+int -> 0, string -> ""
+
+- 有些类明确的要求必须提供初始值，只提供元素的数量不提供初始值无法完成初始化。
+- 如果只提供了元素的数量没有提供元素的值，则只能使用直接初始化。即不能用<code>=</code>，因为等号为拷贝初始化。
+
+例如：
+
+```cpp
+vector<int> ivec(10);       // 10个元素，每个元素的值都为0
+vector<string> svec(10);    // 10个元素，每个元素都为空string对象
+
+vector<int> i1 = 10;        // 不合法
+```
+#### 列表初始值还是元素数量
