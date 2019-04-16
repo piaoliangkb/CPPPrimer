@@ -34,6 +34,8 @@
             - [begin和end运算符](#begin和end运算符)
             - [解引用和成员访问操作](#解引用和成员访问操作)
         - [3.4.2 string和vector迭代器运算](#342-string和vector迭代器运算)
+    - [3.5 数组](#35-数组)
+        - [3.5.1 定义和初始化内置数组](#351-定义和初始化内置数组)
 
 <!-- /TOC -->
 
@@ -464,3 +466,81 @@ iter1 - iter2 | 同一个容器中两个迭代器之间的距离
 >, >=, <, <= | 指向同一个容器中迭代器前后位置的比较
 
 只要两个迭代器指向的是同一个容器中的元素或者尾元素的下一个位置，就能将他们相减，结果的类型名是`difference_type`，是一个有符号整数。
+
+## 3.5 数组
+
+- 数组和vector相似的地方：数组也是存放相同对象的容器。
+
+- 数组和vector不同的地方：数组的大小固定不变，不能随意添加元素。
+
+数组的大小固定，对于某些特殊的程序运行的性能比较好，但相应的损失了一些灵活性。
+
+### 3.5.1 定义和初始化内置数组
+
+编译时，数组的维度必须是已知的，即维度必须是一个**常量表达式**。
+
+```cpp
+unsigned cnt = 42;        // 不是常量表达式
+constexpr unsigned sz = 42;   // 常量表达式，关于constexpr，参见2.4.4
+int arr[10];
+int *parr[sz];            // 含有42个整形指针的数组
+string bad[cnt];          // false，cnt不是常量表达式
+string strs[get_size()]   // 当get_size()是constexpr时候正确，否则错误
+```
+
+>2.4.4:一般来说，如果你认定一个变量是一个常量表达式，那就把它声明成`constexpr`类型
+
+然而，实际测试的时候：
+
+```cpp
+unsigned count = 32;
+
+int bad[count];
+
+cout << sizeof(bad) << endl;
+
+const unsigned count1 = 32;
+
+string good[count1];
+
+constexpr unsigned count2 = 33;
+
+int well[count2];
+
+cout << sizeof(well) << endl;
+```
+
+三种初始化参数的值`unsigned count`, `const unsigned`, `constexpr unsigned`，都可以正常初始化数组.这是因为在编译的时候，变量`count`已经获得了确定的数值。
+
+如果在编译的时候没有获得确定的数值，例如下边：
+
+```cpp
+unsigned count3;
+
+cin >> count3;
+
+int notok[count3];
+
+cout << sizeof(notok) << endl;
+```
+
+编译也正常的工作。若定义函数作为数组初始化的维度，也可正常工作，如下所示。
+
+```cpp
+int get_size()
+{
+    int a, b;
+    cin >> a >> b;
+
+    return a - b;
+}
+
+
+int main()
+{
+    int testfunc[get_size()];
+
+    cout << sizeof(testfunc) << endl;
+}
+```
+
