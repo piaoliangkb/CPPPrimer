@@ -33,6 +33,7 @@
             - [迭代器类型](#迭代器类型)
             - [begin和end运算符](#begin和end运算符)
             - [解引用和成员访问操作](#解引用和成员访问操作)
+        - [3.4.2 string和vector迭代器运算](#342-string和vector迭代器运算)
 
 <!-- /TOC -->
 
@@ -104,9 +105,9 @@ while (cin >> s) // 反复读取，直到文件末尾
 
 #### 使用getline读取一整行
 
-如果想在字符串中保留输入时候的空白符，应该用<code>getline()</code>函数替代<code>>></code>.
+如果想在字符串中保留输入时候的空白符，应该用`getline()`函数替代`>>`.
 
-<code>getline(istream &is, string s)</code>
+`getline(istream &is, string s)`
 
 函数从输入流中读取内容，直到遇到换行符，换行符也被读取，但是s中不保存换行符。
 
@@ -124,7 +125,7 @@ while (getline(cin, s)) // 每次从输入中读取一行并打印，直到遇�
 
 #### string::size_type 类型
 
-<code>string.size()</code>的返回类型是string::size_type，不返回int或者unsigned体现了**标准库类型与机器无关的特性**。
+`string.size()`的返回类型是string::size_type，不返回int或者unsigned体现了**标准库类型与机器无关的特性**。
 
 size_type是一个无符号类型的值，允许编译器通过auto或者decltype来推断变量的类型：
 
@@ -133,7 +134,7 @@ auto len = line.size();
 decltype(line.size()) len;
 ```
 
-注：假如n是一个负值int，那么表达式<code> s.size()<n </code>的判断结果一定是true。因为负值会自动的转换成一个比较大的无符号值。
+注：假如n是一个负值int，那么表达式` s.size()<n `的判断结果一定是true。因为负值会自动的转换成一个比较大的无符号值。
 
 #### 比较string对象
 
@@ -203,7 +204,7 @@ for (decltype(s.zize()) index = 0; index != s.size() && !isspace(s[index]); ++in
 
 ## 3.3 vector
 
-标准库类型<code>vector</code>表示对象的集合，要想使用vector，必须包含头文件：
+标准库类型`vector`表示对象的集合，要想使用vector，必须包含头文件：
 
 ```cpp
 #include <vector>
@@ -235,7 +236,7 @@ vector<T> v4(n) | v4包含了n个执行了值初始化的对象，经过测试�
 vector<T> v5{a, b, c, ...} | v5包含了初始值个数的元素，并赋初值
 vector<T> v5 = {a, b, c, ...} | 同上
 
-<code>v4(n)</code>test:
+`v4(n)`test:
 
 ```cpp
 #include <vector>
@@ -279,7 +280,7 @@ vector<string> s(10, "hi!");
 int -> 0, string -> ""
 
 - 有些类明确的要求必须提供初始值，只提供元素的数量不提供初始值无法完成初始化。
-- 如果只提供了元素的数量没有提供元素的值，则只能使用直接初始化。即不能用<code>=</code>，因为等号为拷贝初始化。
+- 如果只提供了元素的数量没有提供元素的值，则只能使用直接初始化。即不能用`=`，因为等号为拷贝初始化。
 
 例如：
 
@@ -317,7 +318,7 @@ vector<string> v8{10, "hi"}; // v8有10个"hi"
 
 ### 3.3.2 向vector对象添加元素 
 
-使用<code>push_back</code>成员函数，把一个值push到vecror对象的back。
+使用`push_back`成员函数，把一个值push到vecror对象的back。
 
 注：范围for循环语句体内不应该改变所遍历序列的大小，因为范围for循环预存了vector.end()的值，改变序列大小会导致end()失效。
 
@@ -361,17 +362,17 @@ vector对象的索引也是size_type类型。不能用下标的形式添加元�
 
 ## 3.4 迭代器
 
-所有标准库容器都可以使用迭代器，但是只有少数几种才同时支持下标运算符和迭代器。例如<code>vector</code>和<code>string</code>。
+所有标准库容器都可以使用迭代器，但是只有少数几种才同时支持下标运算符和迭代器。例如`vector`和`string`。
 
 ### 3.4.1 使用迭代器
 
-有迭代器的类型都拥有名为<code>begin</code>和<code>end</code>的成员，其中<code>begin</code>成员负责返回指向第一个元素的迭代器。
+有迭代器的类型都拥有名为`begin`和`end`的成员，其中`begin`成员负责返回指向第一个元素的迭代器。
 
 ```cpp
 auto b = v.begin(), e = v.end();
 ```
 
-<code>end</code>成员负责返回指向**尾元素的下一个位置**的迭代器，end成员返回的迭代器通常被称为**尾后迭代器(off-the-end iterator)**或者被简称为**尾迭代器(end iterator)**。
+`end`成员负责返回指向**尾元素的下一个位置**的迭代器，end成员返回的迭代器通常被称为**尾后迭代器(off-the-end iterator)**或者被简称为**尾迭代器(end iterator)**。
 
 如果容器为空，那么begin和end返回的是同一个尾后迭代器。
 
@@ -406,11 +407,11 @@ for (auto it = s.begin(); it != s.end() && !isspace(*it); ++it)
 }
 ```
 
-迭代器建议使用<code>!=</code>而不是<code><</code>的原因是：所有标准库容器都定义了==和!=，而他们中的大多数都没定义<.
+迭代器建议使用`!=`而不是`<`的原因是：所有标准库容器都定义了==和!=，而他们中的大多数都没定义<.
 
 #### 迭代器类型
 
-使用<code>iterator</code>和<code>const_iterator</code>来表示迭代器的类型
+使用`iterator`和`const_iterator`来表示迭代器的类型
 
 ```cpp
 vector<int>::iterator it;     // it可以读写vector<int>类型的元素
@@ -420,11 +421,11 @@ vector<int>::const_iterator it3;    // it3只能读元素，不能写
 string::const_iterator it4;         // it4只能读字符，不能写
 ```
 
-如果vector和string对象是一个常量，那么迭代器类型只能使用<code>const_iterator</code>，如果vector和string对象不是常量，那么既可以使用<code>const_iterator</code>也可以使用<code>iterator</code>.
+如果vector和string对象是一个常量，那么迭代器类型只能使用`const_iterator`，如果vector和string对象不是常量，那么既可以使用`const_iterator`也可以使用`iterator`.
 
 #### begin和end运算符
 
-begin和end运算符返回的具体类型由对象是否是常量来决定，如果对象是常量则返回<code>const_iterator</code>
+begin和end运算符返回的具体类型由对象是否是常量来决定，如果对象是常量则返回`const_iterator`
 
 ```cpp
 vector<int> v;
@@ -434,7 +435,7 @@ auto it1 = v.begin();    // it1的类型是vector<int>::iterator
 auto it2 = cv.begin();   // it2的类型是vector<int>::const_iterator
 ```
 
-如果对象只需要读操作而不需要写操作的话，最好使用常量类型，C++11标准引入了两个新函数<code>vbegin()</code>和<code>vend()</code>。
+如果对象只需要读操作而不需要写操作的话，最好使用常量类型，C++11标准引入了两个新函数`vbegin()`和`vend()`。
 
 ```cpp
 auto it3 = v.cbegin();   // it3的类型是vector<int>::const_iterator
@@ -447,7 +448,7 @@ auto it3 = v.cbegin();   // it3的类型是vector<int>::const_iterator
 *it.empty()；     // 错误，试图访问it的empty成员
 ```
 
-由上可见，解引用然后访问成员的时候，圆括号不可缺少。为了简化上述表达式，C++定义了**箭头运算符 ->**，使得<code>(*it).mem</code>和<code>it->mem</code>所要表达的含义相同。
+由上可见，解引用然后访问成员的时候，圆括号不可缺少。为了简化上述表达式，C++定义了**箭头运算符 ->**，使得`(*it).mem`和`it->mem`所要表达的含义相同。
 
 ### 3.4.2 string和vector迭代器运算
 
@@ -462,4 +463,4 @@ iter -= n | 将iter-n的记过赋给iter
 iter1 - iter2 | 同一个容器中两个迭代器之间的距离
 >, >=, <, <= | 指向同一个容器中迭代器前后位置的比较
 
-只要两个迭代器指向的是同一个容器中的元素或者尾元素的下一个位置，就能将他们相减，结果的类型名是<code>difference_type</code>，是一个有符号整数。
+只要两个迭代器指向的是同一个容器中的元素或者尾元素的下一个位置，就能将他们相减，结果的类型名是`difference_type`，是一个有符号整数。
