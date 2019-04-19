@@ -46,6 +46,10 @@
             - [指针运算](#指针运算)
             - [解引用和指针运算](#解引用和指针运算)
             - [下标运算](#下标运算)
+        - [3.5.4 C风格字符串](#354-c风格字符串)
+            - [C标准库string函数](#c标准库string函数)
+            - [比较字符串，C风格和C++风格的](#比较字符串c风格和c风格的)
+            - [连接字符串](#连接字符串)
 
 <!-- /TOC -->
 
@@ -721,4 +725,64 @@ int a0 = p[-2];
 int a1 = p[-1];
 int a3 = p[1];
 int a4 = p[2]
+```
+
+### 3.5.4 C风格字符串
+
+字符串字面值是一种通用结构的实例，这种结构是C++由C继承而来的**C风格字符串**。
+
+按此习惯书写的字符串放在字符数组中以空字符(null terminated)结束。
+
+#### C标准库string函数
+
+这些函数在C语言中定义在`<string.h>`头文件中，在C++中定义在`<cstring>`头文件中
+
+函数 | 含义
+--- | ---
+strlen(p) | 返回p的长度，空字符不计算在内
+strcmp(p1, p2) | 比较p1和p2的长度。如果p1==p2，返回0；如果p1>p2，返回一个整数；如果p1<p2，返回一个负数
+strcat(p1, p2) | 将p2附加到p1之后，返回p1
+strcpy(p1, p2) | 将p2拷贝给p1，返回p1
+
+传入此类函数的指针必须指向以空字符作为结束的数组。
+
+```cpp
+char ca = {'C', '+', '+'};
+cout << strlen(ca) << endl;  // false，ca没有以空字符结束 
+```
+
+#### 比较字符串，C风格和C++风格的
+
+C++风格：
+
+```cpp
+string s1 = "A string example";
+string s2 = "A different string";
+if (s1 == s2, s1 < s2, s1 > s2, ...) 
+```
+
+C风格：
+
+```c
+const char ca1[] = "A string example";
+const char ca2[] = "A different string";
+if (ca1 < ca2)       // error,试图比较两个无关的地址
+if (strcmp(ca1, ca2) < 0)     // 相当于if (ca1 < ca2)
+```
+
+#### 连接字符串
+
+C++风格：
+
+```cpp
+string str = str1 + " " + str2;
+```
+
+C风格：
+
+```cpp
+// 必须计算准确str的大小
+strcpy(str, ca1);
+strcat(str, " ");
+strcat(str, ca2);
 ```
