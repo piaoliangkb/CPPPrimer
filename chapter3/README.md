@@ -56,6 +56,9 @@
         - [多维数组的初始化](#多维数组的初始化)
             - [使用for循环遍历多维数组（注意引用）](#使用for循环遍历多维数组注意引用)
             - [定义指向多维数组的指针](#定义指向多维数组的指针)
+            - [使用auto和decltype来遍历多维数组](#使用auto和decltype来遍历多维数组)
+            - [使用类型别名简化多维数组的指针](#使用类型别名简化多维数组的指针)
+            - [习题3.43, 3.44, 3.45中多维数组的几种遍历方法](#习题343-344-345中多维数组的几种遍历方法)
 
 <!-- /TOC -->
 
@@ -927,3 +930,109 @@ p = &a[2];
 ```
 
 >关于`int (*p)[4] = a`，见`test.cpp`
+
+#### 使用auto和decltype来遍历多维数组
+
+```cpp
+int a[3][4] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+for (auto p=a; p!=a+3; ++p)
+{
+    for (auto q=*p; q!=*p+4; ++q)
+    {
+        cout << *q << " ";
+    }
+    cout << endl;
+}
+```
+
+上述表达方法使用`begin`和`end`函数更简单一些。
+
+```cpp
+for (auto p=begin(a); p!=end(a); ++p)
+{
+    for (auto q = begin(*p); q!=end(*p); ++q)
+        cout << *q << " ";
+    cout << endl;
+}
+```
+
+#### 使用类型别名简化多维数组的指针
+
+```cpp
+using int_array = int[4];
+// or
+typedef int int_array[4];
+```
+
+#### 习题3.43, 3.44, 3.45中多维数组的几种遍历方法
+
+```cpp
+int main()
+{
+    int ia[3][4] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    // 范围for语句
+    for (int (&row)[4]: ia)
+        for (int col: row) cout << col << " ";
+    cout << endl;
+
+    // 普通for语句，下标运算符
+    for (size_t i=0; i<3; ++i)
+        for (size_t j=0; j<4; ++j) cout << ia[i][j] << " ";
+    cout << endl;
+
+    // 普通for语句，指针
+    for (int (*p)[4]=ia; p!=ia+3; ++p)
+        for (int *q=*p; q!=*p+4; ++q) cout << *q << " ";
+    cout << endl;
+}
+```
+
+使用类型别名：
+
+```cpp
+int main()
+{
+    int ia[3][4] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+    typedef int int_array[4];
+    // using int_array int[4];
+
+    // 范围for语句
+    for (int_array &row: ia)
+        for (int col: row) cout << col << " ";
+    cout << endl;
+
+    // 普通for语句，下标运算符
+    for (size_t i=0; i<3; ++i)
+        for (size_t j=0; j<4; ++j) cout << ia[i][j] << " ";
+    cout << endl;
+
+    // 普通for语句，指针
+    for (int_array *p=ia; p!=ia+3; ++p)
+        for (int *q=*p; q!=*p+4; ++q) cout << *q << " ";
+    cout << endl;
+}
+```
+
+使用auto：
+
+```cpp
+int main()
+{
+    int ia[3][4] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+
+    // 范围for语句，使用auto的时候范围for循环必须添加引用
+    for (auto &row: ia)
+        for (auto col: row) cout << col << " ";
+    cout << endl;
+
+    // 普通for语句，下标运算符
+    for (size_t i=0; i<3; ++i)
+        for (size_t j=0; j<4; ++j) cout << ia[i][j] << " ";
+    cout << endl;
+
+    // 普通for语句，指针，使用auto的时候可以不加引用
+    for (auto p=ia; p!=ia+3; ++p)
+        for (auto q=*p; q!=*p+4; ++q) cout << *q << " ";
+    cout << endl;
+}
+```
