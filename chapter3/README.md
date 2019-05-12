@@ -27,6 +27,8 @@
             - [使用for语句处理vector对象的所有元素](#使用for语句处理vector对象的所有元素)
             - [vector.size()](#vectorsize)
             - [vector对象的索引](#vector对象的索引)
+        - [3.3.4 补充](#334-补充)
+            - [vector.back()](#vectorback)
     - [3.4 迭代器](#34-迭代器)
         - [3.4.1 使用迭代器](#341-使用迭代器)
             - [迭代器运算符](#迭代器运算符)
@@ -383,7 +385,18 @@ vector<int>::size_type   // 正确
 
 #### vector对象的索引
 
-vector对象的索引也是size_type类型。不能用下标的形式添加元素
+vector对象的索引也是`size_type`类型。不能用下标的形式添加元素
+
+### 3.3.4 补充
+
+#### vector.back()
+
+- `vector.back()`方法返回vector最后一个元素的引用。
+- `vector.front()`方法返回vector首元素的引用。
+- `vector.begin()`方法返回指向vector第一个元素的迭代器。
+- `vector.end()`方法返回指向vector尾元素的下一个元素的迭代器。
+
+>reference leetcode120
 
 ## 3.4 迭代器
 
@@ -656,6 +669,8 @@ ia3[2] = 100;
 ```
 
 #### 指针也是迭代器
+
+vector和string迭代器支持的运算，指针全部支持。
 
 ```cpp
 int arr[] = {0, 1, 2, 3, 4, 5, 6 ,7, 8, 9};
