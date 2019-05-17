@@ -16,6 +16,8 @@
             - [使用for语句打印每个字符](#使用for语句打印每个字符)
             - [使用for语句修改每个字符](#使用for语句修改每个字符)
             - [使用下标执行迭代](#使用下标执行迭代)
+        - [3.2.4 补充](#324-补充)
+            - [string.find()方法](#stringfind方法)
     - [3.3 vector](#33-vector)
         - [3.3.1 定义和初始化vector对象](#331-定义和初始化vector对象)
             - [列表初始化vector对象](#列表初始化vector对象)
@@ -227,6 +229,29 @@ for (decltype(s.zize()) index = 0; index != s.size() && !isspace(s[index]); ++in
 {
     s[index] = toupper(s[index]);
 }
+```
+
+### 3.2.4 补充
+
+#### string.find()方法
+
+从一个字符串中查询是否存在某个字符串，返回初始位置类型为`std::size_t`，否则返回结尾位置`std::string::npos`.
+
+![](https://ws1.sinaimg.cn/large/7e197809ly1g34brby7ijj20pd072gm6.jpg)
+
+> leetcode 771
+
+```cpp
+string s = "aabbccd";
+string j = "ab";
+string k = "f";
+
+auto pos = s.find(j);
+cout << pos << endl;
+
+auto pos1 = s.find(k);
+if (pos1 != s.npos) cout << pos1 << endl;
+else cout << "not found" << endl;
 ```
 
 ## 3.3 vector
