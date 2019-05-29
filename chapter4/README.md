@@ -20,6 +20,7 @@
         - [运算对象求值顺序不确定](#运算对象求值顺序不确定)
     - [4.6 成员访问运算符](#46-成员访问运算符)
     - [4.7 条件运算符](#47-条件运算符)
+        - [练习4.24 条件运算符改变结合性](#练习424-条件运算符改变结合性)
     - [4.8 位运算符](#48-位运算符)
 
 <!-- /TOC -->
@@ -283,6 +284,33 @@ cout << (grade < 60) ? "high" : "low" << endl;
 // 先输出grade，随后是 cout < 60 ? "high" : "low".
 // 试图比较cout和60，错误。
 cout << grade < 60 ? "high" : "low" << endl;
+```
+
+条件运算符的结合性是 ***右结合*** 的，即`a ? b : c ? d : e`为`a ? b : (c ? d : e)`，即靠右边的条件运算构成了靠左边的条件运算的分支。
+
+若它是左结合的话，上述条件表达式加括号应为`(a ? b : c) ? d : e`.
+
+>参考链接：https://www.zhihu.com/question/266172062
+
+### 练习4.24 条件运算符改变结合性
+
+```cpp
+finalgrade = (grade > 90) ? "high pass" :
+                            (grade < 60) ? "fail" : "pass";
+```
+
+如果条件运算符变为左结合律，该表达式会变为：
+
+```cpp
+finalgrade = ((grade > 90) ? "high pass" : (grade < 60)) ? "fail" : "pass";
+```
+
+此时c++11会报错：
+
+```c++
+error: operands to ?: have different types 'const char*' and 'bool'
+finalgrade = ((grade > 90) ? "high pass" : (grade < 60)) ? "fail" : "pass";
+                           ^
 ```
 
 ## 4.8 位运算符
