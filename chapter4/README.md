@@ -28,6 +28,10 @@
         - [使用位运算符的例子](#使用位运算符的例子)
         - [移位运算符满足左结合律](#移位运算符满足左结合律)
         - [练习4.26：unsigned long 和 unsigned int的位宽](#练习426unsigned-long-和-unsigned-int的位宽)
+    - [4.9 sizeof运算符](#49-sizeof运算符)
+        - [利用sizeof运算获得数组的大小](#利用sizeof运算获得数组的大小)
+    - [4.10 逗号运算符](#410-逗号运算符)
+    - [4.11 类型转换](#411-类型转换)
 
 <!-- /TOC -->
 
@@ -421,3 +425,36 @@ unsigned long pass27 = 1 << 27;
 - unsigned int 至少为16位
 
 - unsigned long 至少为32位
+
+## 4.9 sizeof运算符
+
+sizeof运算符返回一个表达式或者一个类型名字所占的字节数，类型为`size_t`。运算符运算对象的两种形式`sizeof (type)`或者`sizeof expr`.
+
+例子：
+
+```cpp
+Sales_data *p;
+
+sizeof *p;
+```
+
+sizeof满足右结合律，而且和*运算符优先级相同，所以表达式会按照从右到左的顺序组合，即`sizeof (*p)`。而且sizeof不会求运算对象的值，所以指针未初始化也没什么影响。
+
+即：在sizeof运算符中解引用无效指针是一个安全的行为，因为指针实际上并没有被真正使用。
+
+### 利用sizeof运算获得数组的大小
+
+```cpp
+int a = [20];
+
+constexpr size_t sz = sizeof(a) / (sizeof(*a))；
+int arr[sz]; // 正确，sizeof返回一个常量表达式
+```
+
+## 4.10 逗号运算符
+
+逗号表达式(comma operator)含有两个运算对象，按照从左到右的顺序依次求值。
+
+首先对左侧表达式求值，然后将左侧的求值结果丢掉，**逗号运算符的真正结果是右侧表达式的值**。
+
+## 4.11 类型转换
