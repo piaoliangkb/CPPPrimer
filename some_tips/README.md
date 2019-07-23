@@ -19,7 +19,10 @@
 - [对常量的引用](#对常量的引用)
 - [赋值运算右结合律，返回左侧运算对象](#赋值运算右结合律返回左侧运算对象)
 - [解引用和递增运算符](#解引用和递增运算符)
-- [条件运算符的右结合性](#条件运算符的右结合性)
+- [条件运算符的右结合律](#条件运算符的右结合律)
+- [逻辑和关系运算符，运算对象和求值结果都是右值](#逻辑和关系运算符运算对象和求值结果都是右值)
+- [string （字符串） 和 char[] （字符数组）的指针](#string-字符串-和-char-字符数组的指针)
+- [字符串赋值给字符指针](#字符串赋值给字符指针)
 
 <!-- /TOC -->
 --------------------------------
@@ -66,3 +69,53 @@ a = (b = 1);
 条件运算符的结合性是右结合的，即 `a?b:c?d:e` 为 `a?b:(c?d:e)` ，即靠右边的条件运算构成了靠左边的条件运算的分支。
 
 若它是左结合的话，上述条件表达式加括号应为 `(a?b:c)?d:e` .
+
+## 逻辑和关系运算符，运算对象和求值结果都是右值
+
+>p126 逻辑和关系运算符
+
+留个坑
+
+## string （字符串） 和 char[] （字符数组）的指针
+
+>p133 成员访问运算符
+
+对于该章节的例子，声明指向某一个 string 的指针：
+
+```cpp
+string s1 = "hello, world", *p1 = s1; 
+```
+
+上述写法报错：
+
+```
+error: cannot convert 'std::string {aka std::basic_string<char>}' to 'std::string* {aka std::basic_string<char>*}' in initialization
+     string s1 = "hello, world", *p = s1;
+```
+
+正确写法为：需要在 s1 前方加上取地址符。
+
+```cpp
+string s1 = "hello, world", *p1 = &s1;
+```
+
+不要和指向字符数组的指针搞混，指向字符数组可以不加取地址符。
+
+```cpp
+char s2[] = "HELLO WORLD", *p1 = s2;
+cout << *p1;  // 输出'H'
+```
+
+## 字符串赋值给字符指针
+
+对于语句 `const char *a = "HELLO"`来说，声明了一个字符指针，并将字符串常量的第一个字符的地址赋值给指针 a。
+
+```cpp
+char *a = "hello";
+cout << *a << " " << *(a+1) << endl; 
+// warning: deprecated conversion from string constant to 'char*' [-Wwrite-strings]
+//     char *a = "hello";
+// 不赞成将字符串常量转换成 char*
+```
+
+正确写法应该为 `const char *a = "hello";`
