@@ -36,6 +36,17 @@
         - [4.11.1 算术转换](#4111-算术转换)
             - [整数提升](#整数提升)
             - [无符号类型的运算对象](#无符号类型的运算对象)
+            - [类型转换的例子](#类型转换的例子)
+        - [4.11.2 其他隐式类型转换](#4112-其他隐式类型转换)
+            - [数组转换成指针](#数组转换成指针)
+            - [指针的转换](#指针的转换)
+            - [转换成bool类型](#转换成bool类型)
+            - [转换成常量](#转换成常量)
+            - [类类型定义的转换](#类类型定义的转换)
+        - [4.11.3 显示转换 (explitit conversions)](#4113-显示转换-explitit-conversions)
+            - [命名的强制类型转换 Named Casts](#命名的强制类型转换-named-casts)
+            - [旧式的强制类型转换](#旧式的强制类型转换)
+    - [4.12 运算符优先级表](#412-运算符优先级表)
 
 <!-- /TOC -->
 
@@ -494,3 +505,149 @@ int arr[sz]; // 正确，sizeof返回一个常量表达式
 - 一个是无符号一个是带符号，且无符号类型不小于带符号类型，则带符号类型转换成无符号类型。例如：int 转换为 unsigned int。（存在副作用，见2.1.2节）
 
 - 带符号类型大于无符号类型，则转换结果依赖于机器。如果无符号类型都能存到带符号类型中，则无符号转换为带符号。否则相反。例如，如果 unsigned int 和 long 大小相同，那么 long 转换为 unsigned int；如果 long 占用的空间比 int 大，则 unsigned int 转换为 long。
+
+#### 类型转换的例子
+
+```cpp
+3.14159L + 'a';     // a promoted to int, int converted to long double
+dval + ival;        // ival converted to double
+dval + fval;        // fval converted to double
+ival = dval;        // dval converted to int (by truncation 切除小数部分)
+flag = dval;        // dval == 0 ? false : true;
+cval + fval;        // cval promoted to int, int converted to float
+sval + cval;        // sval and cval promoted to int
+cval + lval;        // cval converted to long
+ival + ulval;       // ival converted to unsigned long
+usval + ival;       // 类型转换根据 unsigned short 和 int 的字节长度来确定
+uival + lval;       // 根据 unsigned int 和 long 的字节长度来确定
+```
+
+### 4.11.2 其他隐式类型转换
+
+#### 数组转换成指针
+
+在大多数用到数组的表达式中，数组自动转换成指向数组首元素的指针：
+
+```cpp
+int ia[10];
+int *p = ia;  // ia转换成指向数组首元素的指针
+```
+
+当数组被用作 `decltype`, 取地址符 `&`, `sizeof`, `typeid` 等运算符的运算对象时，数组不会被转换成指针。
+
+#### 指针的转换
+
+- 常量整数值 0 和字面值 nullptr 可以转换成任意指针类型
+ 
+- 指向任意非常量的指针能够转换成 void*
+
+- 指向任意对象的指针能转换成 const void*
+
+#### 转换成bool类型
+
+存在从算术类型或指针类型向布尔类型自动转换的机制。
+
+```cpp
+char *cp = 0;        // cp 为空指针，不指向任何实际的对象
+char *cp = nullptr;  // nullptr 用来表示空指针常量
+if (cp) ...          // 上述两个指针值都不会使该条件语句执行 
+```
+
+#### 转换成常量
+
+允许将指向非常量类型的指针 转换成 指向相应的常量类型的指针。（引用同理）
+
+```cpp
+int i;
+const int &j = i;      // 非常量 i 转换成 const int 的引用
+const int *p = &i;     // 非常量 i 的地址转换成 const 的地址
+int &r = j, *q = p;    // 错误，不允许将 const 转换成 非常量 conversion from const to nonconst not allowed
+```
+
+#### 类类型定义的转换
+
+类类型能定义由编译器自动执行的转换。
+
+- 在标准库 string 类型的地方使用C风格字符串。
+
+```cpp
+string s = "a value"；  // 字符串字面值转换成 string 类型
+```
+
+- while() 条件部分转换为布尔类型
+
+```cpp
+while (cin >> s) // while 的条件部分把 cin 转换成 bool 类型，IO库定义了 istream 到 bool类型转换的规则
+```
+
+### 4.11.3 显示转换 (explitit conversions)
+
+强制转换类型 cast 。尽管有时候不得不使用强制类型转换，但这种方法本质上是十分危险的。
+
+#### 命名的强制类型转换 Named Casts
+
+一个命名的强制类型转换有如下格式： `cast-name<type>(expression)`
+
+其中 `type` 是转换的目标，`expression` 是转换的值，如果 `type` 是引用类型，那么结果是左值。`cast-name` 制定了执行哪种转换。
+
+- static_cast
+
+任何具有明确定义的类型转换，只要不包含底层const（指针指向对象是个常量），都可以使用static_cast。
+
+例如，将一个运算对象强制转换为 doubke 类型来执行浮点数除法。
+
+```cpp
+int i, j;
+double dval = static_cast<double>(j) / i;
+```
+
+可以使用 static_cast 找回存在于 void* 指针中的值：
+
+```cpp
+void *p = &d; // 任何非常量对象的地址都能存到void*
+
+double *dp = static_cast<double*>(p);  // 将void*转换回初始的指针类型
+```
+
+当把指针存到 void* 中，并且用 static_cast 将其强制转换回原来的类型时，应该确保指针的值保持不变。转换的结果与原始的地址值相等，所以我们必须确保转换后所得的类型就是指针所指的类型。
+
+- const_cast 
+
+只能改变运算对象的底层const（指针指向对象是一个常量）。
+
+```cpp
+const char *pc;
+char *p = const_cast<char*>(pc);
+```
+
+将常量对象转换为非常量对象的行为，称为 “去掉const性质” (cast away the const)。
+
+只有 const_cast 能改变表达式的常量属性，但不能改变表达式的类型。
+
+```cpp
+const char *cp = "hello, world";
+char *q = static_cast<char *>(cp);    // error, static_cast cant cast away const
+static_cast<string>(cp);              // 正确，字符串字面值可以转换成string类型
+const_cast<string>(cp)；              // 错误，const_cast 只能改变常量属性
+```
+
+const_cast 常用于有关函数重载的上下文中，见6.4节。
+
+- reinterpret_cast
+
+reinterpret_cast 通常为运算对象的位模式提供较低层次上的重新解释。
+
+#### 旧式的强制类型转换
+
+早期的C++语言中，显示地进行强制类型转换包含两种形式：
+
+- `type (expr);`  // 函数形式的强制类型转换，例如，int(a)
+
+- `(type) expr;`  // C语言风格的强制类型转换，例如，(int)a
+
+## 4.12 运算符优先级表
+
+![](https://ws1.sinaimg.cn/large/7e197809ly1g5a7l2kh9vj20mn0ltgpu.jpg)
+
+![](https://ws1.sinaimg.cn/large/7e197809ly1g5a7lvpd90j20on0y5jyg.jpg)
+
