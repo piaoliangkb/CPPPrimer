@@ -80,9 +80,9 @@ C++ 规定，不允许跨过变量的初始化语句直接跳转到该变量作�
 
 ```cpp
 case true:
-    // 程序的执行流程可能来开下面的初始化语句，所以该switch语句不合法
-    string file_name;    // 隐式初始化
-    int ival = 0；       // 显式初始化
+    // 程序的执行流程可能绕开下面的初始化语句，所以该switch语句不合法
+    string file_name;    // 隐式初始化，错误
+    int ival = 0；       // 显式初始化，错误
     int jval;            // jval 没有被初始化，合理
 case false:
     jval = 1;            // 给jval赋值，正确
