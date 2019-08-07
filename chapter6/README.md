@@ -42,6 +42,13 @@
             - [引用返回左值](#引用返回左值)
             - [列表初始化返回值](#列表初始化返回值)
             - [主函数 main 的返回值](#主函数-main-的返回值)
+            - [递归](#递归)
+        - [6.3.3 函数返回数组指针](#633-函数返回数组指针)
+            - [直接定义](#直接定义)
+            - [使用类型别名](#使用类型别名)
+            - [使用尾置返回类型(trailing return type)](#使用尾置返回类型trailing-return-type)
+            - [使用 decltype](#使用-decltype)
+        - [练习6.36 6.37](#练习636-637)
 
 <!-- /TOC -->
 
@@ -625,3 +632,105 @@ int main()
 一个函数调用了它本身，称该函数为递归函数(recursive function)。
 
 main 函数不能调用自己。
+
+### 6.3.3 函数返回数组指针
+
+数组不能被拷贝，所以函数不能返回数组，但是函数可以返回数组的指针或者引用。
+
+#### 直接定义
+
+我们在定义一个指向数组的指针的时候，表述方式如下：
+
+```cpp
+int arr[10];
+int (*p)[10] = &arr;
+```
+
+同理，返回数组指针的函数定义如下：
+
+`Type (*func(params))[dimension]`
+
+```cpp
+int (*func(int i))[10];   // 函数的参数为i，返回值为指向大小为10的int数组的指针
+```
+
+逐层理解：
+
+- `func(int i)` 表示函数参数为int类型
+
+- `(*func(int i))` 表示函数返回结果可以解引用（是一个指针）
+
+- `(*func(int i))[10]` 表示解引用函数返回结果得到大小为10的数组
+
+- `int (*func(int i))[10]` 数组元素类型为 int
+
+#### 使用类型别名
+
+```cpp
+typedef int arrT[10];   // arrT是一个类型别名，表示的类型是含有10个int的数组
+//or
+using arrT = int[10];
+
+arrT *func(int i);      // 函数func 返回指向10个int数组的指针
+```
+
+#### 使用尾置返回类型(trailing return type)
+
+C++11 新标准中可以使用尾置返回类型生命比较复杂的函数。
+
+函数真正返回类型在形参列表之后，前边使用 auto 代替。
+
+```cpp
+auto func(int i) -> int (*)[10];
+auto func(int i) -> int (&)[10];
+```
+
+#### 使用 decltype
+
+如下所示，decltype 关键字的结果是一个数组，若要返回指针，需要在函数前加符号`*`。
+
+```cpp
+int odd[] = {1, 3, 5, 7, 9};
+int even[] = {0, 2, 4, 6, 8};
+
+decltype(odd) *f(int i)
+{
+    return (i % 2) ? &odd : &even;
+    // 返回一个指向数组的指针，若不加取地址符，则会报错：
+    // error: cannot convert 'int*' to 'int (*)[5]' in return
+}
+```
+
+### 练习6.36 6.37
+
+编写一个函数声明，返回数组的引用，并且改数组包含10个string对象。
+
+1. 直接声明
+
+```cpp
+string (&func(string (&s)[10]))[10];
+```
+
+2. 使用类型别名
+
+```cpp
+typedef string sarr[10];
+using sarr = string[10];
+
+sarr &func(sarr &s);
+```
+
+3. 使用尾置返回类型
+
+```cpp
+auto func(string (&s)[10]) -> string(&)[10];
+```
+
+4. 使用 decltype 关键字
+
+```cpp
+string arr[10];
+
+decltype(arr) &func(decltype(arr) &s);
+```
+
