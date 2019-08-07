@@ -29,6 +29,19 @@
                 - [显式传递一个表示数组大小的形参](#显式传递一个表示数组大小的形参)
             - [数组引用形参](#数组引用形参)
             - [传递多维数组](#传递多维数组)
+        - [6.2.5 main函数：处理命令行参数](#625-main函数处理命令行参数)
+        - [6.2.6 含有可变形参的函数](#626-含有可变形参的函数)
+            - [initializer_list 形参](#initializer_list-形参)
+            - [省略符形参](#省略符形参)
+    - [6.3 返回类型和 return 语句](#63-返回类型和-return-语句)
+        - [6.3.1 无返回值函数](#631-无返回值函数)
+        - [6.3.2 有返回值函数](#632-有返回值函数)
+            - [值是如何被返回的](#值是如何被返回的)
+            - [不要返回局部对象的引用或指针](#不要返回局部对象的引用或指针)
+            - [返回 类 的函数](#返回-类-的函数)
+            - [引用返回左值](#引用返回左值)
+            - [列表初始化返回值](#列表初始化返回值)
+            - [主函数 main 的返回值](#主函数-main-的返回值)
 
 <!-- /TOC -->
 
@@ -368,3 +381,247 @@ void print(int matrix[][10], int rowSize); // 从声明看起来是二维数组�
 - `int *matrix[10];` 表示 matrix 是 int* 类型的数组，大小为10
 
 - `int (*matrix)[10];` 表示 matrix 是指针，指向 int 类型大小为10的数组
+
+### 6.2.5 main函数：处理命令行参数
+
+命令行参数通过两个可选的形参传递给 main 函数：
+
+`int main(int argc, char *argv[])`
+
+或者可以写成：
+
+`int main(int argc, char **argv)`
+
+- 第一个形参 argc 表示数组中字符串的数量
+
+- 第二个形参 argv 是一个数组，它的元素是指向C风格字符串的指针，即 `argv` 指向 `char*`
+
+其中，argv[0]保存程序名字。
+
+### 6.2.6 含有可变形参的函数
+
+为了能处理不同数量实参的函数，C++11 提供了两种方法：
+
+- 如果所有实参类型相同，可以传递一个名为 `initializer_list` 的标准库类型
+
+- 如果实参类型不同，可以编写可变参数模板（chapter 16.4）
+
+此外，C++ 还有省略符形参，这种只用于与 C 函数交互的接口程序。
+
+#### initializer_list 形参
+
+如果实参数量位置，但是类型都相同，可以使用该种方法。
+
+initializer_list 提供的操作有：
+
+- 默认初始化，列表为空：`initializer_list<T> list;`
+
+- 赋值初始化，列表的元素是初始值的副本，类型为const：`initializer_list<T> list{a, b, c..};`
+
+- 拷贝或赋值对象：`list2 = list1;` 或者 `list2(list2);`，不会拷贝列表中的元素，原始列表和副本共享元素。
+
+- 元素数量，首元素指针，尾元素下一个位置的指针：`list.size()`, `list.begin()`, 'list.end()'
+
+initializer_list 对象中的元素永远是常量值。
+
+```cpp
+void error_msg(initializer_list<string> list)
+{
+    for (const auto &s : list)
+        cout << s << endl;
+}
+```
+
+#### 省略符形参
+
+省略符形参是为了便于 C++ 程序访问某些特殊的 C代码 设置的。大多数 **类类型的对象** 在传递给省略符形参时都无法正确拷贝。
+
+省略符形参只能出现在形参列表的最后一个位置：
+
+```cpp
+void foo(parm_list, ...);
+
+void foo(...);
+```
+
+举例：
+
+```cpp
+void function(...)  //代号: 1
+{
+    std::cout << 1 << std::endl;
+}
+
+void function(int number, ...) //代号: 2
+{
+    std::cout << 2 << std::endl;
+}
+
+
+//function的匹配规则是: 如果第一个参数是int,或者转为int的类型就优先调用: 2, 其他情况调用: 1.
+int main()
+{
+    int n = 10;
+    function(n);  
+    std::cout << "----------------" << std::endl;
+
+    std::string str = "shihua";
+    function(str.c_str());
+    function("hello");
+
+    return 0;
+}
+```
+
+## 6.3 返回类型和 return 语句
+
+### 6.3.1 无返回值函数
+
+没有返回值的 return 语句只能用在返回类型为 void 的函数中。此外，返回类型为 void 的函数不要求一定要有 return 语句，因为这类函数的最后一句后面会隐式地执行 return。
+
+一个返回类型是void的函数，`return expression;` 中的 expression 也必须是另一个返回 void 的函数。
+
+### 6.3.2 有返回值函数
+
+只要函数的返回类型不是void，则该函数内每条 return 语句必须返回一个值。
+
+返回值类型必须与函数返回类型相同，或者可以隐式地转换成函数的返回类型。
+
+#### 值是如何被返回的
+
+返回一个值的方式和初始化一个变量或者形参的方式相同：返回值用于初始化调用点的一个临时量，该临时量就是函数调用的结果。
+
+如果函数 **返回引用**，那么该引用仅仅是它所引对象的一个别名。例如：
+
+```cpp
+const string &shortString(const string &s1, const string &s2)
+{
+    return s1.size() < s2.size() ? s1 : s2;
+}
+```
+
+此处返回的是 const string 的引用。
+
+#### 不要返回局部对象的引用或指针
+
+函数完成之后，局部变量的引用将不再指向有效的内存区域。
+
+```cpp
+const string &manip()
+{
+    string ret;
+    ret = .....;
+
+    if (!ret.empty())
+        return ret;
+    else
+        return "EMPTY";
+}
+```
+
+上面两条返回语句都将返回未定义的值，第一条语句返回局部对象的引用，第二条的字符串字面值转换成一个局部临时string对象。
+
+#### 返回 类 的函数
+
+如果函数返回指针，引用，或者类的对象，我们就可以使用函数调用的结果访问结果对象的成员。
+
+例如：
+
+```cpp
+auto size = shorterString(s1, s2).size();
+```
+
+#### 引用返回左值
+
+- 调用一个返回引用的函数得到左值
+
+- 其他返回类型得到右值
+
+若函数返回值是一个引用，那么他是一个左值，可以出现在赋值运算符的左侧。
+
+例如：
+
+```cpp
+// 返回某个位置字符的引用
+char &get_val(const string &s, string::size_type ix)
+{
+    return s[ix];
+}
+
+// 返回引用的函数可以出现在赋值运算符的左侧
+int main()
+{
+    string s("some value");
+    get_val(s, 0) = 'S';
+}
+```
+
+#### 列表初始化返回值
+
+C++11 规定，函数可以返回花括号包围的值的列表。
+
+列表用来对表示函数返回的临时量进行初始化。如果列表为空，临时量执行值初始化。
+
+- 如果函数返回的是内置类型，则话花括号中最多包含一个值，并且该值所占空间不应该大于目标类型的空间。
+
+- 如果函数返回值为类类型，由类本身定义初始值如何使用。
+
+例子：
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+vector<string> err()
+{
+    return {"404 not found", "403 forbidded error", "502 bad gateway"};
+}
+
+int getIntNum()
+{
+    return {2};
+}
+
+double getDoubleNum()
+{
+    return {3.14};
+}
+
+int main()
+{
+    vector<string> errormsg = err();
+    for (auto &item : errormsg) cout << item << endl;
+
+    cout << getIntNum() << endl;
+    cout << getDoubleNum() << endl;
+
+    return 0;
+}
+```
+
+#### 主函数 main 的返回值
+
+- 之前规定如果函数的返回类型不是void，那么必须有一个返回值
+
+- 如果函数为 main 函数，那么可以没有 return 语句。因为编译器将在结尾处插入 `return 0;`
+
+main函数的返回值可以看做状态指示器，返回0表示执行成功，返回其他值表示执行失败。
+
+其中 cstalib 头文件定义了两个预处理变量：
+
+```cpp
+int main()
+{
+    if (failure) return EXIT_FAILURE;
+    else return EXIT_SUCCESS;
+}
+```
+
+#### 递归
+
+一个函数调用了它本身，称该函数为递归函数(recursive function)。
+
+main 函数不能调用自己。
