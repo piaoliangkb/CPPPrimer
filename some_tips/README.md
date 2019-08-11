@@ -1,3 +1,10 @@
+<!--
+ * @Description: In User Settings Edit
+ * @Author: your name
+ * @Date: 2019-05-18 23:45:30
+ * @LastEditTime: 2019-05-18 23:45:30
+ * @LastEditors: your name
+ -->
 书写格式：
 
 ## 标题
@@ -25,6 +32,8 @@
 - [字符串赋值给字符指针](#字符串赋值给字符指针)
 - [让 std::cin 读取空白字符](#让-stdcin-读取空白字符)
 - [解引用和递增运算符](#解引用和递增运算符-1)
+- [指针的引用](#指针的引用)
+- [递归打印 vector](#递归打印-vector)
 
 <!-- /TOC -->
 --------------------------------
@@ -175,3 +184,32 @@ void swap(const int* &p1, const int* &p2)
 }
 ```
 
+## 递归打印 vector
+
+练习 6.47
+
+```cpp
+void output(vector<int> &v)
+{
+    if (!v.empty())
+    {
+        auto last = v.back();
+        v.pop_back();
+        output(v);
+        cout << last << " ";
+    }
+}
+```
+
+练习 6.33
+
+```cpp
+void output(vector<int> &v, vector<int>::iterator it)
+{
+    if (it != v.end())
+    {
+    cout << *it << endl;
+    output(v, ++it);  // or output(v, next(it));
+    }
+}
+```

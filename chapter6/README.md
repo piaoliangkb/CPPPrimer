@@ -1,3 +1,10 @@
+<!--
+ * @Description: In User Settings Edit
+ * @Author: your name
+ * @Date: 2019-07-26 16:31:42
+ * @LastEditTime: 2019-08-11 14:16:45
+ * @LastEditors: Please set LastEditors
+ -->
 <!-- TOC -->
 
 - [第六章 函数](#第六章-函数)
@@ -49,6 +56,38 @@
             - [使用尾置返回类型(trailing return type)](#使用尾置返回类型trailing-return-type)
             - [使用 decltype](#使用-decltype)
         - [练习6.36 6.37](#练习636-637)
+    - [6.4 函数重载](#64-函数重载)
+        - [定义重载函数](#定义重载函数)
+        - [判断两个形参内容是否相同](#判断两个形参内容是否相同)
+        - [const形参](#const形参)
+        - [const_cast 和重载](#const_cast-和重载)
+        - [调用重载的函数](#调用重载的函数)
+        - [6.4.1 重载与作用域](#641-重载与作用域)
+    - [6.5 默认实参，内联函数，constexpr函数](#65-默认实参内联函数constexpr函数)
+        - [6.5.1 默认实参](#651-默认实参)
+            - [使用默认实参调用函数](#使用默认实参调用函数)
+            - [默认实参的函数声明](#默认实参的函数声明)
+            - [默认实参初始值](#默认实参初始值)
+        - [6.5.2 内联函数和 constexpr 函数](#652-内联函数和-constexpr-函数)
+            - [内联函数可以避免函数调用的开销](#内联函数可以避免函数调用的开销)
+            - [constexpr 函数](#constexpr-函数)
+            - [将内联函数和 constexpr 函数放在头文件内](#将内联函数和-constexpr-函数放在头文件内)
+        - [6.5.3 调试帮助](#653-调试帮助)
+            - [assert 预处理宏](#assert-预处理宏)
+            - [NDEBUG 预处理变量](#ndebug-预处理变量)
+    - [6.6 函数匹配](#66-函数匹配)
+        - [候选函数和可行函数](#候选函数和可行函数)
+        - [寻找最佳匹配](#寻找最佳匹配)
+        - [含有多个形参的函数匹配](#含有多个形参的函数匹配)
+        - [6.6.1 实参类型转换](#661-实参类型转换)
+            - [需要类型提升和算术类型转换的匹配](#需要类型提升和算术类型转换的匹配)
+            - [const 实参的函数匹配](#const-实参的函数匹配)
+    - [6.7 函数指针](#67-函数指针)
+        - [使用函数指针](#使用函数指针)
+        - [重载函数的指针](#重载函数的指针)
+        - [函数指针形参](#函数指针形参)
+        - [返回指向函数的指针](#返回指向函数的指针)
+        - [使用 decltype 和 auto](#使用-decltype-和-auto)
 
 <!-- /TOC -->
 
@@ -734,3 +773,485 @@ string arr[10];
 decltype(arr) &func(decltype(arr) &s);
 ```
 
+## 6.4 函数重载
+
+**重载函数 (overloaded function)** ： 同一作用域内几个函数名字相同，形参不同。
+
+- main 函数不能重载
+
+### 定义重载函数
+
+对重载函数来说，他们应该在形参数量或者形参类型上有所不同。对如下两个函数来说，形参列表相同，那么第二个声明错误：
+
+```cpp
+RECORD lookup(const &Account);
+bool lookup(const &Account);    // 错误，与上一个函数相比只有返回类型不同
+```
+
+### 判断两个形参内容是否相同
+
+- 省略形参的名字
+
+有时候形参的名字可以省略，例如：
+
+```cpp
+RECORD lookup(const Account &acct);
+RECORD lookup(const Account&);      // 省略了形参的名字
+```
+
+- 使用类型别名
+
+使用类型别名的形参相同
+
+```cpp
+typedef Phone TelephoneNum;
+RECORD lookup (const Phone&);
+RECORD lookup (const TelephoneNum&);  // 使用类型别名，定义相同
+```
+
+### const形参
+
+顶层 const 不影响传入函数的对象，一个拥有顶层 const 的形参无法和另一个没有顶层 const 的形参区别开来。
+
+```cpp
+RECORD lookup(Phone);
+RECORD lookup(const Phone);      // ERROR，重复声明
+
+RECORD lookup(Phone*);
+RECORD lookup(Phone* const);     // ERROR，重复声明
+```
+
+然而，如果是底层 const ，即区分指向或引用的是常量对象还是非常量对象，可以区分出不同的函数。
+
+```cpp
+RECORD lookup(Account&);       // 普通对象的引用
+RECORD lookup(const Account&); // 常量对象的引用
+
+RECORD lookup(Account*);       // 指向Account的指针
+RECORD lookup(const Account*); // 指向Account常量的指针
+```
+
+编译器可以根据实参是否为常量来决定调用哪个函数:
+
+- const 不能转换成其他类型，所以 const 类型的对象只能传递给 const 形参。
+
+- 非常量可以转换成 const，所以上面四个函数都可以作用于非常量对象或者指向非常量对象的指针。（编译器会优先选择非常量版本）
+
+### const_cast 和重载
+
+对于函数：
+
+```cpp
+const string &shoerterString(const string &s1, const string &s2)
+{
+    return s1.size() < s2.size() ? s1 : s2;
+}
+```
+
+函数接收两个引用，返回长度较短字符串的引用。若传入的不是 const string 类型，返回的仍是 const string引用。
+
+我们的需求是，若传入 string 类型的参数（顶层const，可传非常量），则返回 string 类型的引用。
+
+```cpp
+string &shorterString(string &s1, string &s2)
+{
+    auto &r = shorterString(const_cast<const string&>(s1), const_cast<const string&>(s2));
+    return const_cast<string&>(r);
+}
+```
+
+### 调用重载的函数
+
+函数匹配（函数确定 function matching）：把函数调用与一组重载函数中的某一个关联起来。
+
+调用重载函数有三个可能结果：
+
+- 找到一个最佳匹配函数(best match)
+
+- 无匹配（no match）
+
+- 二义性调用(ambiguous call)
+
+### 6.4.1 重载与作用域
+
+如果我们在内层作用域中声明名字，他将隐藏外层作用域中声明的同名实体。
+
+- C++ 中，名字查找(name lookup)发生在类型检查之前。
+
+>ref: https://yq.aliyun.com/articles/297138
+
+## 6.5 默认实参，内联函数，constexpr函数
+
+### 6.5.1 默认实参
+
+某些函数的形参在多次调用的时候他们都被赋予相同的值，我们把这个反复出现的值称为函数的默认实参（default argument）。
+
+例如：
+
+```cpp
+typedef string::size_type sz;
+string screen(sz ht = 24, sz wid = 80, char background = ' ');
+```
+
+#### 使用默认实参调用函数
+
+函数调用时候，实参按照位置进行解析，默认实参负责填补函数缺少的尾部实参。即调用函数的时候只能省略尾部实参。
+
+```cpp
+window = screen(, , '?');       // 错误，只能省略尾部实参
+window = screen('?');           // 正确，调用函数 screen('?', 80, ' ');
+```
+
+当我们设计函数时，让不需要使用默认值的形参出现在前面，经常使用默认值的形参出现在后面。
+
+#### 默认实参的函数声明
+
+函数的后续生命不可以修改已经存在的默认值，但是可以添加默认实参。
+
+```cpp
+string screen(sz, sz, char = ' ');    // 首次定义
+
+string screen(sz, sz, char = '*');    // error,不可修改默认实参
+
+string screen(sz, sz = 42, char = ' ');  // true，添加默认实参值
+```
+
+通常应该在函数声明中指定默认实参，并将该声明放在合适的头文件中。
+
+#### 默认实参初始值
+
+局部变量不能作为默认实参。
+
+```cpp
+sz width = 80;
+sz height = 100;
+string screen(sz = height, sz = width, char = ' ');
+
+void f()
+{
+    height = 200;        // 改变了默认实参的值
+    sz width = 100;      // 定义了新变量隐藏了外部width，但是没有改变默认值
+    window = screen();   // call screen(200, 80, ' ');
+}
+```
+
+- 在上述函数中，在函数f()中改变了默认实参的height的值，所以调用函数 screen 时默认实参height传入200；
+
+- 声明了一个局部变量width隐藏了外部的width，但是该局部变量与传递给screen的实参无关。
+
+### 6.5.2 内联函数和 constexpr 函数
+
+在大多数机器上，一次函数调用包含着一系列工作：调用前保存寄存器，并在返回时回复；可能需要拷贝实参；程序转向一个新的位置继续执行。
+
+#### 内联函数可以避免函数调用的开销
+
+将函数定义为内联函数(inline)，通常是将它在每个调用点上“内联地”展开。即：
+
+`cout << shorterString(s1, s2) << endl;`
+
+在编译的过程中将被展开为
+
+`cout << (s1.size() < s2.size() > s1 : s2) << endl;`
+
+如此消除了函数调用时侯的开销。
+
+- 定义内联函数需要在函数的返回类型前加上 `inline`。
+
+- 内联说明只是向编译器发出的一个请求，编译器可以选择忽略这个请求。
+
+- 一般来说，内联机制用于优化规模较小，流程直接，频繁调用的函数。
+
+- 很多编译器都不支持内联递归函数。
+
+#### constexpr 函数
+
+constexpr 函数是指能用于常量表达式的函数。定义 constexpr 函数遵循的规定：
+
+- 函数的返回类型及所有的形参类型都是字面值类型。
+
+- 函数体中必须有且只有一条 return 语句。
+
+```cpp
+constexpr int new_size() { return 42; }
+constexpr int foo = new_size();     // true，foo是一个常量表达式
+```
+
+在执行初始化任务时，编译器把对 constexpr 函数的调用替换成结果值。为了能在编译过程中随时展开，constexpr 函数被隐式地定义为内联函数。
+
+constexpr 函数体内也可以包含其他语句（空语句，类型别名，using 声明），只要这些语句在运行时不执行任何操作。
+
+允许 constexpr 函数的返回值并非一个常量：
+
+```cpp
+constexpr size_t scale(size_t cnt) { return new_sz() * cnt; }
+```
+
+当scale的参数是常量表达式时，它的返回值也是常量表达式。
+
+即：常量表达式函数若传入非常量，那么返回值也是非常量表达式，此时由编译器检查是否用在合适的地方，若不符合要求则编译器发出错误信息。
+
+#### 将内联函数和 constexpr 函数放在头文件内
+
+对于某个给定的内联函数或者 constexpr 函数来说，它的多个定义必须完全一致。基于这个原因，内联函数和constexpr函数通常定义在头文件内。
+
+- inline 是实现修饰符而不是声明修饰符。
+
+>http://www.yanglajiao.com/article/u011327981/50601800  
+>内联函数应该在头文件中定义，这一点不同于其他函数。编译器在调用点内联展开函数的代码时，必须能够找到 inline 函数的定义才能将调用函数替换为函数代码，而对于在头文件中仅有函数声明是不够的。  
+>当然内联函数定义也可以放在源文件中，但此时只有定义的那个源文件可以用它，而且必须为每个源文件拷贝一份定义(即每个源文件里的定义必须是完全相同的)，当然即使是放在头文件中，也是对每个定义做一份拷贝，只不过是编译器替你完成这种拷贝罢了。但相比于放在源文件中，放在头文件中既能够确保调用函数是定义是相同的，又能够保证在调用点能够找到函数定义从而完成内联(替换)。
+
+### 6.5.3 调试帮助
+
+程序可以包含一些用于调试的代码，这些代码在开发程序时使用，应用程序编写完成时屏蔽掉这些代码。这种方法用了两项与处理功能：assert 和 NDEBUG。
+
+#### assert 预处理宏
+
+assert 是一种预处理宏（preprocessor marco）。
+
+`assert(expr);`
+
+首先对 expr 求值，如果表达式为假，assert 输出信息并终止程序执行；如果表达式为真，assert 什么也不做。
+
+- assert 宏定义在 cassert 头文件中。预处理名字由预处理器而非编译器管理，所以可以直接使用预处理名字而不需提供 using 声明。
+
+- 宏名字在程序内必须唯一，所以含有 cassert 头文件的程序不能再定义名为 assert 的变量，函数，或者其他实体。
+
+- assert 宏常用于检查不能发生的条件，例如字符串长度超过阈值。
+
+#### NDEBUG 预处理变量
+
+assert 的行为依赖于一个名为 NDEBUG 的预处理变量的状态。如果定义了 NDEBUG ，那么 assert 什么也不做。
+
+可以使用 `#define` 语句定义 NDEBUG 。或者编译时候通过 `$ g++ -D NDEBUG main.cpp`，作用相当于在 main.cpp 文件的头部写上 `#define NDEBUG`
+
+可以用 NDEBUG 编写自己的条件调试代码：
+
+```cpp
+void print(const int ia[], size_t size)
+{
+    #ifndef NDEBUG
+        cerr << __func__ << ": array size is " << size << endl;
+    #endif
+}
+```
+
+或见代码 : NDEBUG_example.cpp
+
+![](https://ws1.sinaimg.cn/large/7e197809ly1g5vjnrio11j20uz08ywgq.jpg)
+
+## 6.6 函数匹配
+
+某次调用选择某个重载函数叫函数匹配。
+
+### 候选函数和可行函数
+
+候选函数(candidate function)：
+
+1. 与被调用的函数同名
+
+2. 声明在调用点可见
+
+可行函数(viable function)：
+
+1. 形参数量与本次调用提供的实参数量一致
+
+2. 每个实参类型与对应的形参类型相同
+
+### 寻找最佳匹配
+
+函数匹配的第三步是从可行函数中选择与本次调用最匹配的函数。寻找“最匹配”的思想是：实参类型与形参类型越接近，他们匹配的越好。
+
+### 含有多个形参的函数匹配
+
+在可行函数中，编译器检查每个实参，如果有且只有一个函数满足下列条件则匹配成功：
+
+1. 该函数每个实参的匹配都不劣于其他可行函数需要的匹配
+
+2. 至少有一个实参优于其他可行函数提供的匹配
+
+如果没有函数脱颖而出，那么该调用是错误的，编译器将报告二义性。
+
+### 6.6.1 实参类型转换
+
+为了确定最佳匹配，编译器将实参类型到形参类型的转换划分成几个等级：
+
+1. 精确匹配：
+
+- 实参类型和形参类型相同
+
+- 实参从数组或者函数类型转换成对应的指针类型
+
+- 向实参添加顶层 const 或者从实参中删除顶层 const
+
+2. 通过 const 转换实现的匹配
+
+3. 通过类型提升实现的匹配
+
+4. 通过算术类型转换或指针转换实现的匹配
+
+5. 通过类类型转换实现的匹配
+
+#### 需要类型提升和算术类型转换的匹配
+
+```cpp
+void ff(int);
+void ff(short);
+ff('a');        // char promoted to int, call function ff(int)
+```
+
+```cpp
+void ff(long);
+void ff(float);
+ff(3.14);       // ambiguous, 3.14是double，可转换成long也可以转换成float
+```
+
+#### const 实参的函数匹配
+
+```cpp
+const account a;
+account b;
+
+void lookup(account&);
+void lookup(const account&);
+```
+
+其中两个函数都可以接受b，但是非常量版本的函数可以精确匹配。
+
+只有常量版本的函数可以接受a。
+
+## 6.7 函数指针
+
+函数指针指向的是函数而非对象。**函数类型由它的返回类型和形参类型共同决定，与函数名无关。**
+
+对函数`bool lengthCompare(const string&, const string&);`来说，声明一个指向该函数的指针：
+
+```cpp
+bool (*pf)(const string&, const string&);   // 未初始化
+
+pf = lengthCompare;      // 初始化
+pf = &lengthCompare;     // 等价的赋值语句
+
+bool b1 = pf("hello", "world");
+bool b2 = (*pf)("hello", "world");
+```
+
+其中，指针名两端需要加括号，如果不加括号，即 `bool *pf(const string&, const string&)` 表示返回值为指向 bool 值指针的函数。
+
+### 使用函数指针
+
+把函数名作为一个值使用时，该函数自动地转换成指针。
+
+```cpp
+bool (*pf)(const string&, const string&);   // 未初始化
+
+pf = lengthCompare;      // 初始化
+pf = &lengthCompare;     // 等价的赋值语句
+
+bool b1 = pf("hello", "world");    // 无需解引用指针
+bool b2 = (*pf)("hello", "world");  
+```
+
+我们可以为函数指针赋值 nullptr 或者 0，表示该指针没有指向任何一个函数。
+
+### 重载函数的指针
+
+对于重载函数：
+
+```cpp
+void ff(int *);
+void ff(unsigned int);
+```
+
+编译器通过指针类型决定选用那个函数，指针类型必须与重载函数中的某一个精确匹配：
+
+```cpp
+void (*pf1)(unsigned int) = ff;  // pf1 指向 ff(unsigned int)
+
+void (*pf2)(int *) = ff;         // pf2 指向 ff(int *)
+```
+
+### 函数指针形参
+
+和数组类似虽然不能定义函数类型的形参，但是形参可以是指向函数的指针。
+
+```cpp
+bool lengthCompare(const string&, const string&);
+
+void useBigger(const string& s1, const string& s2, bool pf(const string&, const string&));
+// 等价声明
+void useBigger(const string& s1, const string& s2, bool (*pf)(const string&, const string&));
+// 可以直接把函数名作为实参使用
+
+useBigger(s1, s2, lengthCompare);
+```
+
+使用 **typedef** 和 **decltype** 简化函数指针类型：
+
+```cpp
+bool lengthCompare(const string&, const string&);
+
+// 如下所示 func 和 func2 都是函数类型
+typedef bool func(const string&, const string&);
+typedef decltype(lengthCompare) func2;
+
+// funcP 和 funcP2 都是函数指针类型
+typedef bool (*funcP)(const string&, const string&);
+typedef decltype(lengthCompare) *funcP2;
+```
+
+此时 useBigger 函数可以声明为：
+
+```cpp
+void useBigger(const string&, const string&, func);
+void useBigger(const string&, const string&, func2);
+void useBigger(const string&, const string&, funcP);
+void useBigger(const string&, const string&, funcP2);
+```
+
+### 返回指向函数的指针
+
+函数虽然不能返回函数，但是可以返回指向函数的指针。
+
+- 若想声明一个返回函数指针的函数，最简单的方法是使用类型别名。
+
+```cpp
+using F = int(int*, int);      // 函数返回类型为int，参数为 (int*, int)
+using PF = int(*)(int *, int);
+```
+
+适用类型别名定义一个函数：
+
+```cpp
+PF f1(int);
+F f1(int);         // F是函数类型，函数返回值不能为一个函数
+F *f1(int)；
+```
+
+- 直接声明
+
+```cpp
+int (*f1(int))(int *, int);
+```
+
+- 尾置返回类型
+
+```cpp
+auto f1(int) -> int(*)(int*, int);
+```
+
+### 使用 decltype 和 auto
+
+如果我们明确知道返回的函数，就可以使用 decltype 简化书写。
+
+假定两个函数都返回 string::size_type 类型：
+
+```cpp
+string::size_type sumLength(const string&, const string&);
+string::size)type largerLength(const string&, const string&);
+```
+
+我们让 getFunction 函数返回两个函数中的一个，那么定义如下：
+
+```cpp
+decltype(sumlength) *getFunction(const string&);
+```
