@@ -1,10 +1,3 @@
-<!--
- * @Description: In User Settings Edit
- * @Author: your name
- * @Date: 2019-07-26 16:31:42
- * @LastEditTime: 2019-08-11 14:16:45
- * @LastEditors: Please set LastEditors
- -->
 <!-- TOC -->
 
 - [第六章 函数](#第六章-函数)

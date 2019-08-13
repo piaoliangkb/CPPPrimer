@@ -15,6 +15,7 @@ struct Sales_data {
     // exercises 7.2 
     std::string isbn() const { return bookNo; }
     Sales_data& combine(const Sales_data &data);
+    // end of exercises 7.2
 };
 
 void Sales_data::Adddata(Sales_data data)
@@ -39,5 +40,28 @@ Sales_data& Sales_data::combine(const Sales_data &data)
     revenue += data.revenue;
     return *this;
 }
+// end of exercises 7.2
+
+// exervises 7.6
+Sales_data add(const Sales_data &lhs, const Sales_data &rhs)
+{
+    Sales_data sum = lhs;
+    sum.combine(rhs);
+    return sum;
+}
+
+std::istream &read(std::istream &is, Sales_data &item)
+{
+    is >> item.bookNo >> item.units_sold >> item.revenue;
+    return is;
+}
+
+std::ostream &print(std::ostream &os, const Sales_data &item)
+{
+    os << item.isbn() << " " << item.units_sold << " "
+       << item.revenue;
+    return os;
+}
+// end of exercises 7.6
 
 #endif
