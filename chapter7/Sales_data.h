@@ -5,6 +5,15 @@
 #include <string>
 
 struct Sales_data {
+
+    //execises 7.11
+    Sales_data() = default;
+    Sales_data(const std::string &s): bookNo(s) {}
+    Sales_data(const std::string &s, unsigned n, double p):
+               bookNo(s), units_sold(n), revenue(p) {}
+    Sales_data(std::istream &is);
+    // end of exercises 7.11
+
     std::string bookNo;
     unsigned units_sold = 0;
     double revenue = 0.0;
@@ -15,6 +24,7 @@ struct Sales_data {
     // exercises 7.2 
     std::string isbn() const { return bookNo; }
     Sales_data& combine(const Sales_data &data);
+    double avg_price() const { return revenue / units_sold; }
     // end of exercises 7.2
 };
 
@@ -63,5 +73,12 @@ std::ostream &print(std::ostream &os, const Sales_data &item)
     return os;
 }
 // end of exercises 7.6
+
+//exercises 7.11
+Sales_data::Sales_data(std::istream &is)
+{
+    read(is, *this);
+}
+//end of exercises 7.11
 
 #endif
