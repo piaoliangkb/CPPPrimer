@@ -9,17 +9,17 @@ int main()
         while (is)
         {
             Sales_data trans(is);
-            if (total.bookNo == trans.bookNo)
+            if (total.isbn() == trans.isbn())
             {
                 total.combine(trans);
             }
             else
             {
-                total.Print();
+                print(std::cout, total) << std::endl;
                 total = trans;
             }
         }
-        total.Print();
+        print(std::cout, total) << std::endl;
     }
     else
     {

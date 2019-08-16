@@ -5,9 +5,14 @@
 #include <iostream>
 
 struct Person {
+    // declaration friend function of class Person
+    friend std::istream &read(std::istream &is, Person &person);
+
+    private:
     std::string name;
     std::string addr;
 
+    public:
     // exercises 7.15 add constructor of Person
     Person() = default;
     Person(std::string name, std::string addr): name(name), addr(addr) {}
@@ -21,16 +26,21 @@ struct Person {
 };
 
 // exercises 7.9
+// exercises 7.19 set name, addr access level: private
+// outside cant change the variable of private member, 
+// with this segment, compile error
+// unless it is friend of class:Person
 std::istream &read(std::istream &is, Person &person)
 {
     is >> person.name >> person.addr;
     return is;
 }
+// end of exercises 7.19
 
 std::ostream &print(std::ostream &os, const Person &person)
 {
-    os << "Person name is " << person.name << std::endl
-       << "Person addr is " << person.addr;
+    os << "Person name is " << person.getName() << std::endl
+       << "Person addr is " << person.getAddr();
     return os; 
 }
 // end of exercises 7.9

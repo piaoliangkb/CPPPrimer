@@ -18,6 +18,12 @@ std::istream &read(std::istream &is, Sales_data &item);
 
 struct Sales_data {
 
+    // friend Sales_data add(const Sales_data &lhs, const Sales_data &rhs);
+    friend std::istream &read(std::istream &is, Sales_data &item);
+    friend std::ostream &print(std::ostream &os, const Sales_data &item);
+
+    public:
+
     //execises 7.11
     Sales_data() = default;
     Sales_data(const std::string &s): bookNo(s) {}
@@ -30,12 +36,13 @@ struct Sales_data {
 
     // end of exercises 7.11
 
+    private:
+
     std::string bookNo;
     unsigned units_sold = 0;
     double revenue = 0.0;
 
-    void Adddata(Sales_data data);
-    void Print();
+    public:
 
     // exercises 7.2 
     std::string isbn() const { return bookNo; }
@@ -43,21 +50,6 @@ struct Sales_data {
     double avg_price() const { return revenue / units_sold; }
     // end of exercises 7.2
 };
-
-void Sales_data::Adddata(Sales_data data)
-{
-    if (bookNo != data.bookNo) return ;
-    units_sold += data.units_sold;
-    revenue += data.revenue;
-}
-
-void Sales_data::Print()
-{
-    std::cout << "{" << std::endl;
-    std::cout << "This book number is : " << bookNo << std::endl;
-    std::cout << "This book has been sold " << units_sold << std::endl;
-    std::cout << "All revenue is " << revenue << std::endl << "}" << std::endl;
-}
 
 // exercises 7.2
 Sales_data& Sales_data::combine(const Sales_data &data)
@@ -68,7 +60,7 @@ Sales_data& Sales_data::combine(const Sales_data &data)
 }
 // end of exercises 7.2
 
-// exervises 7.6
+// exervises 7.6, use this func in ex7.7
 Sales_data add(const Sales_data &lhs, const Sales_data &rhs)
 {
     Sales_data sum = lhs;
