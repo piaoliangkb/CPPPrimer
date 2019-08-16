@@ -4,6 +4,18 @@
 #include <iostream>
 #include <string>
 
+// this has been used in the declaration of func std::istream &read(...)
+// must be declared before the declaration of function read(...)
+// otherwise we will see the error :
+// .\Sales_data.h:14:50: error: 'read' was not declared in this scope
+struct Sales_data;
+
+// this function has been used in struct {Salse_data}
+// must be declared before definition
+// otherwise an error occured :
+// .\Sales_data.h:14:50: error: 'read' was not declared in this scope
+std::istream &read(std::istream &is, Sales_data &item);
+
 struct Sales_data {
 
     //execises 7.11
@@ -11,7 +23,11 @@ struct Sales_data {
     Sales_data(const std::string &s): bookNo(s) {}
     Sales_data(const std::string &s, unsigned n, double p):
                bookNo(s), units_sold(n), revenue(p) {}
-    Sales_data(std::istream &is);
+    
+    // in exercises 7.12 we move the definition of the Salse_data constructor that takes an istream into the body of Sales_data class
+    Sales_data(std::istream &is) { read(is, *this); }
+    // end of ecercises 7.12
+
     // end of exercises 7.11
 
     std::string bookNo;
@@ -75,10 +91,12 @@ std::ostream &print(std::ostream &os, const Sales_data &item)
 // end of exercises 7.6
 
 //exercises 7.11
-Sales_data::Sales_data(std::istream &is)
-{
-    read(is, *this);
-}
+//in exercises 7.12 this segment has to be commentted out, and move the definition into the body of Sales_data class
+// Sales_data::Sales_data(std::istream &is)
+// {
+//     read(is, *this);
+// }
+//end of exercises 7.12
 //end of exercises 7.11
 
 #endif

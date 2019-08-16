@@ -8,6 +8,13 @@ struct Person {
     std::string name;
     std::string addr;
 
+    // exercises 7.15 add constructor of Person
+    Person() = default;
+    Person(std::string name, std::string addr): name(name), addr(addr) {}
+    Person(std::string name): name(name), addr("no addr") {}
+    Person(std::istream& is) { read(is, *this); };
+    // end of exercises 7.15
+
     // 此处函数返回值为 const std::string& 类型
     const std::string& getName() const { return name; }
     const std::string& getAddr() const { return addr; }
@@ -27,5 +34,6 @@ std::ostream &print(std::ostream &os, const Person &person)
     return os; 
 }
 // end of exercises 7.9
+
 
 #endif
