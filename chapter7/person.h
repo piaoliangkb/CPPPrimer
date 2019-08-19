@@ -9,8 +9,8 @@ struct Person {
     friend std::istream &read(std::istream &is, Person &person);
 
     private:
-    std::string name;
-    std::string addr;
+    std::string name = "ali";
+    std::string addr{"california"};
 
     public:
     // exercises 7.15 add constructor of Person
