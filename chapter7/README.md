@@ -28,6 +28,40 @@
             - [定义一个类型成员](#定义一个类型成员)
             - [可变数据成员](#可变数据成员)
             - [类数据成员的初始值](#类数据成员的初始值)
+        - [7.3.2 返回 *this 的成员函数](#732-返回-this-的成员函数)
+            - [从 const 成员函数返回 *this](#从-const-成员函数返回-this)
+            - [基于 const 的重载](#基于-const-的重载)
+            - [练习7.30 显式地使用 this 指针的优缺点](#练习730-显式地使用-this-指针的优缺点)
+        - [7.3.3 类类型](#733-类类型)
+            - [类的声明](#类的声明)
+        - [7.3.4 友元再探](#734-友元再探)
+            - [类之间的友元关系](#类之间的友元关系)
+            - [令成员函数成为友元](#令成员函数成为友元)
+            - [重载函数和友元](#重载函数和友元)
+            - [友元声明和作用域](#友元声明和作用域)
+    - [7.4 类的作用域](#74-类的作用域)
+        - [作用域和定义在类外部的成员](#作用域和定义在类外部的成员)
+        - [7.4.1 名字查找与类的作用域](#741-名字查找与类的作用域)
+            - [类型名要特殊处理](#类型名要特殊处理)
+            - [成员定义中普通块作用域的名字查找](#成员定义中普通块作用域的名字查找)
+            - [类作用域外地全局作用域](#类作用域外地全局作用域)
+            - [文件中名字的出现处对其进行解析（有点拗口？）](#文件中名字的出现处对其进行解析有点拗口)
+    - [7.5 构造函数再探](#75-构造函数再探)
+        - [7.5.1 构造函数初始值列表](#751-构造函数初始值列表)
+            - [构造函数的初始值有时必不可少](#构造函数的初始值有时必不可少)
+            - [成员初始化顺序](#成员初始化顺序)
+            - [默认实参和构造函数](#默认实参和构造函数)
+        - [7.5.2 委托构造函数](#752-委托构造函数)
+        - [7.5.3 默认构造函数的作用（待理解）](#753-默认构造函数的作用待理解)
+            - [使用默认构造函数](#使用默认构造函数)
+        - [7.5.4 隐式的类类型转换](#754-隐式的类类型转换)
+            - [只允许一步类类型转换](#只允许一步类类型转换)
+            - [抑制构造函数定义的隐式转换](#抑制构造函数定义的隐式转换)
+            - [explicit 构造函数只能用于直接初始化](#explicit-构造函数只能用于直接初始化)
+            - [为转换显示地使用构造函数](#为转换显示地使用构造函数)
+            - [标准库中含有显式构造函数的类](#标准库中含有显式构造函数的类)
+            - [练习7.49](#练习749)
+            - [练习7.51](#练习751)
 
 <!-- /TOC -->
 
@@ -320,3 +354,436 @@ private:
     std::string addr{"california"};
 }
 ```
+
+### 7.3.2 返回 *this 的成员函数
+
+返回引用的函数是左值的，意味着这些函数返回的是对象本身而非对象的副本。
+
+```cpp
+class Screen {
+    public:
+    Screen &set(char);
+    Screen &set(pos, pos, char);
+};
+
+inline Screen &Screen::set(char c)
+{
+    contents[cursor] = c;
+    return *this;
+}
+
+inline Screen &Screen::set(pos row, pos col, char c)
+{
+    contents[row*width + col] = c;
+    return *this;
+}
+```
+
+#### 从 const 成员函数返回 *this
+
+一个 const 成员函数如果以引用的形式返回 *this，那么它的返回类型将是常量引用。
+
+（const 成员函数中，this是指向常量对象的指针，不能修改调用该函数的对象）
+
+#### 基于 const 的重载
+
+通过区分成员函数是否是 const 的，我们可以对其进行重载。
+
+- 非常量版本的函数对常量成员是不可用的。
+
+- 非常量可以调用常量版本的函数，但是非常量版本的函数是更好的匹配。
+
+```cpp
+class Screen {
+public:
+    // 根据调用对象是否为const，重载了display函数，const成员函数返回 const Screen 类型
+    Screen &display(std::ostream &os) { do_display(os); return *this; }
+    const Screen &display(std::ostream &os) const { do_display(os); return *this; }
+private:
+    void do_display(std::ostream &os) const { os << contents; }
+};
+```
+
+上述重载使得：
+
+- 常量Screen成员调用display函数之后返回常量成员的引用
+
+- 普通Screen成员调用display函数之后返回普通成员的引用
+
+若只有一个const成员函数，则非常量Screen成员调用display函数之后只能返回常量引用。
+
+对于上述定义了 do_display() 函数：
+
+- 对于公共代码使用私有功能函数，避免多处使用相同代码
+
+- 拓展时只需要修改私有成员
+
+- 我们在类的内部定义了 do_display() 函数，被隐式地声明为内联函数，不会有额外的运行时开销
+
+#### 练习7.30 显式地使用 this 指针的优缺点
+
+优点，例如：`void setAddr(const std::string &addr) { this->addr = addr; }`
+
+- 更明确
+
+- 成员函数参数名称可以和类的成员相同
+
+缺点，例如：`std::string getAddr() const { return this->addr; }`
+
+- 冗余
+
+- 阅读起来较繁琐
+
+### 7.3.3 类类型
+
+我们可以把类名作为类型的名字使用，或者把类名跟在关键字 class 或者 struct 后面：
+
+```cpp
+Sales_data item1;
+class Sales_data item2;
+struct Sales_data item3;
+```
+
+其中第二种方式从C语言继承而来，无论定义类的时候使用class或者struct，声明时候struct和class都可以使用。
+
+#### 类的声明
+
+类的声明和定义可以分开：
+
+```cpp
+class Screen;
+```
+
+上述声明称为 **前向声明(forward declaration)**。对于类 Screen 来说，它在声明后定义之前是一个 **不完全类型(incomplete type)**：
+
+- 可以定义指向这种类型的指针或者引用（链表）
+
+- 可以声明以不完全类型作为参数或者返回类型的函数
+
+直到类被定义之后，数据成员才能被声明成这种类类型，所以一个类的成员类型不能是该类自己，但是可以是指向自身类型的引用或者指针。
+
+### 7.3.4 友元再探
+
+普通的非成员函数，类，类的成员函数都可以定义成友元。
+
+友元函数可以定义在类的内部，这样的函数是隐式内联的。
+
+#### 类之间的友元关系
+
+定义一个 Window_mgr 类，可以访问 Screen 内部的数据：
+
+```cpp
+class Window_mgr {
+public:
+    using ScreenIndex = std::vector<Screen>::size_type;
+    void clear(ScreenIndex);
+private:
+    std::vector<Screen> screens{Screen(24, 80, ' ')};
+}
+
+void Window_mgr::clear(ScreenIndex i)
+{
+    Screen &s = screens[i];
+    s.contents = string(s.height * s.width, ' ');
+}
+```
+
+若要让 clear() 函数工作，需要将 Window_mgr 类声明为 Screen 类的友元：
+
+```cpp
+class Screen {
+    friend class Window_mgr;
+}
+```
+
+#### 令成员函数成为友元
+
+Screen 类还可以只为函数 clear() 提供访问权限，此时定义为：
+
+```cpp
+class Screen {
+    friend void Window_mgr::clear(ScreenIndex);
+}
+```
+
+#### 重载函数和友元
+
+一个类若要把一组重载函数声明成它的友元，则需要对每一个重载函数分别声明。
+
+#### 友元声明和作用域
+
+友元声明和普通的声明作用不同，友元声明只影响访问权限。
+
+## 7.4 类的作用域
+
+### 作用域和定义在类外部的成员
+
+一个类就是一个作用域。
+
+对于 clear() 函数来说，编译器在处理参数列表之前已经明确了我们当前正位于 Window_mgr 类的作用域中，所以不必再专门说明 ScreenIndex 是 Window_mgr 类定义的。
+
+```cpp
+void Window_mgr::clear(ScreenIndex i)
+{
+    Screen &s = screens[i];
+    s.contents = string(s.height * s.width, ' ');
+}
+```
+
+此外，返回类型必须出现在函数名称之前，且需要指明返回类型是哪个类的成员。例如对于 addScreen() 函数：
+
+```cpp
+class Window_mgr {
+public:
+    ScreenIndex addScreen(const Screen&);
+    using ScreenIndex = std::vector<Screen>::size_type;
+};
+
+Window_mgr::ScreenIndex Window_mgr::addScreen(const Screen &s)
+{
+    screens.push_back(s);
+    return screens.size() - 1;
+}
+```
+
+### 7.4.1 名字查找与类的作用域
+
+类的定义分为两部处理：
+
+1. 编译成员的声明
+
+2. 类全部可见之后编译函数体
+
+因为成员函数体直到整个类可见之后才会被处理，所以它能使用类中定义的任何名字。
+
+#### 类型名要特殊处理
+
+在类中，如果成员使用了外层作用域中的某个名字，而且该名字代表一种类型，那么类不能在之后重新定义该名字。
+
+类型名的定义通常出现在类的开始，这样确保所有使用该类型的成员出现在类型名的定义之后。
+
+#### 成员定义中普通块作用域的名字查找
+
+若类中函数声明了和类成员相同名称的变量，则会隐藏同名的类成员。
+
+然而我们仍然可以通过加上类的名字或者显式地使用 this 指针来强制访问成员。
+
+#### 类作用域外地全局作用域
+
+```cpp
+int height = 10;
+class Screen {
+private:
+    int height = 0;
+}
+
+void Screen::dummy_func(pos height)
+{
+    cursor = width * ::height;
+}
+```
+
+上述使用了作用域运算符访问全局的 height 对象。
+
+#### 文件中名字的出现处对其进行解析（有点拗口？）
+
+名字查找（name lookup）的过程：
+
+1. 名字所在的块中
+
+2. 外层作用域
+
+3. 如果没有匹配的声明，则程序报错
+
+## 7.5 构造函数再探
+
+### 7.5.1 构造函数初始值列表
+
+建议使用构造函数初始值。
+
+很多类中，初始化和赋值的区别事关底层效率：前者直接初始化成员，后者先初始化再赋值。
+
+例如：
+
+```cpp
+Screen(pos ht, pos wd, char c): height(ht), width(wd), contents(ht*wd, c) {}
+
+// rather than
+
+Screen(pos ht, pos wd, char c) {
+    height = ht;
+    width = wd;
+    contents = (ht*wd, c);
+}
+```
+
+#### 构造函数的初始值有时必不可少
+
+如果成员是 const 或者 引用 的话，必须将这个成员初始化。
+
+#### 成员初始化顺序
+
+成员初始化顺序与他们在类定义中出现的顺序一致，与初始值列表无关。
+
+最好令构造函数初始值顺序与成员生命顺序保持一致，尽量避免使用某些成员初始化其他成员。
+
+#### 默认实参和构造函数
+
+如果一个构造函数为所有参数都提供了默认实参，则它实际上也定义了默认构造函数。例如：
+
+```cpp
+class Sales_data {
+public:
+    Sales_data(std::string s = "") : bookNo(s) {}
+}
+```
+
+上述构造函数为默认构造函数，若此处仍有`Sales_data() = default;`，则会产生二义性。
+
+### 7.5.2 委托构造函数
+
+C++11 新标准定义了 **委托构造函数(delegating constructor)**. 
+
+一个委托构造函数使用它所属类的其他构造函数执行他自己的初始化过程，或者说它把自己的一些或者全部职责委托给了其他构造函数。
+
+```cpp
+class Sales_data {
+public:
+    // 非委托构造函数
+    Sales_data(std::string s, unsigned cnt, double price):
+        bookNo(s), units_sold(cnt), revenue(price*cnt) {}
+    // 委托构造函数
+    Sales_data(): Sales_data("", 0, 0) {}
+    Sales_data(std::string s): Sales_data(s, 0, 0) {}
+    Sales_data(std::istream &is): Sales_data() { read(is, *this); }
+};
+```
+
+受委托构造函数的初始值列表和函数体被依次执行。
+
+### 7.5.3 默认构造函数的作用（待理解）
+
+当对象被默认初始化或值初始化时自动执行默认构造函数。
+
+默认初始化发生的情况：
+
+1. 在块作用域内不使用任何初始值定义一个非静态变量或者数组。
+
+2. 一个类本身含有类类型的成员，且使用合成的默认构造函数。
+
+3. 类类型的成员没有在构造函数初始值列表中显式地初始化。
+
+值初始化发生的情况：
+
+1. 数组初始化过程中提供的初始值数量小于数组大小。
+
+2. 不适用初始值定义一个局部静态变量。
+
+3. 显式地请求值初始化，例如vector只提供大小。
+
+#### 使用默认构造函数
+
+```cpp
+Sales_data obj();  // 声明了一个返回值为 Sales_data 的函数
+Sales_data obj;    // obj是一个默认初始化的对象
+```
+
+### 7.5.4 隐式的类类型转换
+
+如果构造函数只接受一个实参，那么实际上定义了转换为此类类型的隐式转换机制，有时我们把这种构造函数称作 **转换构造函数(converting constructor)**.
+
+即：能通过一个实参调用的构造函数，定义了一条从构造函数的参数类型向类类型隐式转换的规则。
+
+例如：
+
+```cpp
+string numm_book = "999999";
+item.combine(null_book);
+```
+
+这里使用了一个 string 实参调用 Sales_data 的 combine 成员。编译器用给定的 string 创建了一个 Sales_data 对象，新生成的临时 Sales_data 对象被传递给 combine。
+
+#### 只允许一步类类型转换
+
+编译器只会自动地执行一步类型转换，例如下面代码执行了两步，错误：
+
+```cpp
+// 首先将 “999999” 转换成 string
+// 其次将 string 转换成 Sales_data
+// error
+item.combine("999999");
+```
+
+可以显式地转换：
+
+```cpp
+item.combine(string("99999"));
+// or
+item.combine(Sales_data("999999"));
+```
+
+从 istream 到 Sales_data 的转换：
+
+```cpp
+item.combine(std::cin);
+```
+
+这段代码把 std::cin 隐式地转换成 Sales_data.
+
+#### 抑制构造函数定义的隐式转换
+
+将构造函数声明为 `explicit` 来阻止隐式转换机制。
+
+```cpp
+class Sales_data {
+public:    
+    Sales_data() = default;
+    explicit Sales_data(const std::string &s): bookNo(s) {}
+    explicit Sales_data(std::istream&);
+}
+```
+
+此时没有构造函数用于隐式创建 Sales_data 对象。
+
+- `explicit` 只对一个实参的构造函数有效，需要多个实参的构造函数不能用于执行隐式转换。
+
+- 只能在类内声明构造函数的时候使用 explicit 关键字，类外定义不应该重复。
+
+#### explicit 构造函数只能用于直接初始化
+
+发生隐式转换的一种情况是当我们执行拷贝形式初始化时(=)。
+
+```cpp
+Sales_data item = null_book; // error，不能拷贝初始化
+Sales_data item(null_book);  // true，可以直接初始化
+```
+
+#### 为转换显示地使用构造函数
+
+编译器不会将 explicit 地构造函数用于隐式转换过程，但是我们可以显示的强制进行转换：
+
+```cpp
+item.combine(static_cast<Sales_data>(cin));
+```
+
+#### 标准库中含有显式构造函数的类
+
+- 接受一个单参数 `const char*` 的 string 构造函数不是 explicit 的。
+
+- 接受一个容量参数的 vector 构造函数是 explicit 的。
+
+#### 练习7.49 
+
+C++ 中的临时量是 const 的，不能作为非 const 的引用参数。
+
+#### 练习7.51
+
+对于函数 `int getSize(const std::vector<int> &)` 来说，如果传入一个参数
+
+```cpp
+getSize(34);
+```
+
+我们无法理解这是什么。
+
+而对于 `std::string` 来说，可以使用 `std::string` 来替换 `const char*`
