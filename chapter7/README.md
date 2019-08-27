@@ -62,6 +62,18 @@
             - [标准库中含有显式构造函数的类](#标准库中含有显式构造函数的类)
             - [练习7.49](#练习749)
             - [练习7.51](#练习751)
+        - [7.5.5 聚合类](#755-聚合类)
+        - [7.5.6 字面值常量类(Literal Class)](#756-字面值常量类literal-class)
+            - [什么是字面值常量类](#什么是字面值常量类)
+            - [constexpr 构造函数](#constexpr-构造函数)
+    - [7.6 类的静态成员](#76-类的静态成员)
+        - [声明静态成员](#声明静态成员)
+        - [使用类的静态成员](#使用类的静态成员)
+        - [定义静态成员](#定义静态成员)
+        - [初始化静态成员](#初始化静态成员)
+            - [类外初始化](#类外初始化)
+            - [静态成员的类内初始化](#静态成员的类内初始化)
+            - [特殊场景下的静态成员](#特殊场景下的静态成员)
 
 <!-- /TOC -->
 
@@ -787,3 +799,253 @@ getSize(34);
 我们无法理解这是什么。
 
 而对于 `std::string` 来说，可以使用 `std::string` 来替换 `const char*`
+
+### 7.5.5 聚合类
+
+**聚合类(aggregate class)**：
+
+- 所有成员都是 public 的
+
+- 没有定义任何构造函数
+
+- 没有类内初始值
+
+- 没有基类，也没有 virtual 函数
+
+例如：
+
+```cpp
+struct Data {
+    int val;
+    string s;
+};
+```
+
+可以使用花括号括起来的成员初始值列表，初始化聚合类的数据成员：
+
+```cpp
+Data val1 = {0, "haha"};
+```
+
+- 初始值的顺序必须与类中成员声明顺序一致。
+
+- 如果初始值列表中的元素个数少于类的成员数量，则靠后的成员被值初始化。
+
+### 7.5.6 字面值常量类(Literal Class)
+
+某些类也可以是字面值类型；字面值类型的类可能含有 constexpr 函数成员（参数和返回值必须是字面值类型），它们是隐式 const 的。
+
+#### 什么是字面值常量类
+
+1. 数据成员都是字面值类型的聚合类是字面值常量类
+
+2. 如果一个类不是聚合类但是复合如下要求，那么它也是一个字面值常量类：
+
+- 数据成员都是字面值类型(The data members all must have literal type)
+
+- 类必须含有至少一个 constexpr 构造函数
+
+- 如果数据成员有类内初始值，那么内置类型数据成员的初始值必须是常量表达式；若成员是类类型，则初始值必须使用成员自己的 constexpr 构造函数
+
+- 类必须使用析构函数的默认定义(default definition of its destructor)
+
+#### constexpr 构造函数
+
+尽管构造函数不能是 const 的，但是字面值常量类的构造函数可以是 constexpr 函数。
+
+constexpr 函数可以声明成 `=default` 的形式或者是删除函数的形式，否则 constexpr 函数就必须符合构造函数的要求：
+
+- 不能包含返回语句
+
+也需要符合 constexpr 函数的要求：
+
+- 拥有的唯一可执行语句是返回语句
+
+综上可知，构造函数体一般为空。
+
+```cpp
+class Debug {
+public:
+    constexpr Debug(bool b = true): hw(b), io(b), other(b) {}
+    constexpr Debug(bool h, bool i, bool o): hw(h), io(i), other(o) {}
+    constexor bool any() { return hw || io || other; }
+    void set_io(bool b) { io = b; }
+    void set_hw(bool b) { hw = b; }
+    void set_other(bool b) { hw = b; }
+private:
+    bool hw;
+    bool io;
+    bool oother;
+}
+```
+
+constexpr 构造函数必须初始化所有数据成员。初始值必须是一个 constexpr 构造函数，或者必须是一个常量表达式。
+
+constexpr 构造函数用于生成 constexpr 对象：
+
+```cpp
+constexpr Debug debug(false, true, false);
+constexpr Debug error(false);
+```
+
+## 7.6 类的静态成员
+
+类的静态成员与类本身相关，而不是与类的对象相关。
+
+### 声明静态成员
+
+- 在声明之前加上 static 关键字。
+
+- 静态成员可以是 public 的或者 private 的。
+
+- 静态成员可以是常量，引用，指针，类类型。
+
+- 类的静态成员存在于任何对象之外，对象中不包含任何与静态数据成员有关的数据。
+
+```cpp
+class Account {
+public:
+    void calculate() { amount += amount * interestRate; }
+    static double rate() { return interestRate; }
+    static void rate(double);
+private:
+    std::string owner;
+    double amount;
+    static double interestRate;
+    static double initRate();
+};
+```
+
+### 使用类的静态成员
+
+1. 可以使用域运算符直接访问静态成员：
+
+```cpp
+double r;
+r = Account::rate();
+```
+
+2. 虽然静态成员不属于类的对象，但是可以使用类的对象，引用，指针来访问静态成员：
+
+```cpp
+Account ac1;
+Account *ac2 = &ac1;
+double r;
+r = ac1.rate();
+r = ac2->rate();
+```
+
+3. 类的成员函数不通过作用域运算符就可以直接使用静态成员：
+
+```cpp
+void calculate() { amount += amount * interestRate; }
+```
+
+### 定义静态成员
+
+在类的外部定义静态成员时，不能重复 static 关键字，static 关键字只能出现在类内部的声明语句：
+
+```cpp
+void Account::rate(double newRate)
+{
+    interestRate = newRate;
+}
+```
+
+### 初始化静态成员
+
+#### 类外初始化
+
+静态成员不属于类的任何一个对象，所以他们不是在创建类的对象时被定义的。必须在类的外部定义和初始化每个静态成员，一个静态成员只能定义一次。
+
+类似于全局变量，静态数据成员定义在任何函数之外，一旦被定义，就存在程序的整个生命周期中。
+
+```cpp
+// 定义并初始化一个静态成员
+double Account::interestRate = initRate();
+```
+
+从类名开始，作用域就位于类内了，所以 `initRate()` 函数不需要加域运算符。
+
+- 要想确保对象只定义一次，最好的办法是把静态数据成员的定义与其他非内联函数的定义放在同一个文件中。
+
+#### 静态成员的类内初始化
+
+若要在类内初始化静态成员，需要满足两条要求：
+
+1. 静态成员必须是字面值 **常量** 类型的常量表达式
+
+- 字面值常量类型就是 const 型的算术类型，引用，指针等。
+
+- constexpr是常量表达式，指值不会改变并且在编译过程中就能得到计算结果的表达式。C++11规定允许将变量声明为 constexpr 类型，以便由编译器来检查变量是否为常量表达式。
+
+2. 给静态成员提供的初始值必须是常量表达式
+
+
+
+
+通常，静态成员不应该在类的内部初始化。然而我们可以为 const 整数类型的成员提供类内初始化程序，不过要求静态成员必须是字面值常量类型的常量表达式constexpr。
+
+初始值必须是常量表达式，成员本身也需要是常量表达式。
+
+```cpp
+class Account {
+private:
+    static constexpr int period = 30; // or static const int period = 30;
+    double d[period];
+};
+```
+
+在上述例子中，如果变量 period 的唯一用途就是定义数组的维度，那么不需要在类外专门定义。
+
+如果在类的内部提供了一个初始值，则成员的定义不能再指定一个初始值了。即使一个常量静态数据成员在类内部被初始化了，通常情况下也应该在类的外部定义一下该成员。
+
+```cpp
+constexpr int Account::period;
+```
+
+若不定义也没问题：
+
+```cpp
+class Account {
+public:
+    double get() { return sizeof(d); }
+private:
+    static constexpr int period = 30;
+    double d[period];
+};
+
+int main()
+{
+    Account a;
+    cout << a.get() << endl; // output is 240
+}
+```
+
+>ref: https://www.cnblogs.com/wanyuanchun/p/4041080.html
+
+#### 特殊场景下的静态成员
+
+1. 静态数据成员可以是不完全类型
+
+```cpp
+class Bar {
+public:
+    // ...
+private:
+    static Bar mem1;  // 静态成员可以是不完全类型
+    Bar *mem2;        // 非静态成员可以是指针或者引用
+    Bar mem3;         // 非静态成员不能是不完全类型
+};
+```
+
+2. 可以使用静态成员作为默认实参
+
+```cpp
+class Screen {
+public:
+    Screen& clear(char = background);
+private:
+    static constexpr char background; // or static const char background;
+};
+```

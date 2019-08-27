@@ -34,6 +34,7 @@
 - [解引用和递增运算符](#解引用和递增运算符-1)
 - [指针的引用](#指针的引用)
 - [递归打印 vector](#递归打印-vector)
+- [检查类型是否为字面值(literal type)](#检查类型是否为字面值literal-type)
 
 <!-- /TOC -->
 --------------------------------
@@ -212,4 +213,14 @@ void output(vector<int> &v, vector<int>::iterator it)
     output(v, ++it);  // or output(v, next(it));
     }
 }
+```
+
+## 检查类型是否为字面值(literal type)
+
+见练习7.55
+
+```cpp
+#include <type_traits>
+
+std::is_literal_type<std::string>::value;
 ```
