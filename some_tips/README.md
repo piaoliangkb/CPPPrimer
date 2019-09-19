@@ -35,6 +35,7 @@
 - [指针的引用](#指针的引用)
 - [递归打印 vector](#递归打印-vector)
 - [检查类型是否为字面值(literal type)](#检查类型是否为字面值literal-type)
+- [处理string对象中的字符](#处理string对象中的字符)
 
 <!-- /TOC -->
 --------------------------------
@@ -224,3 +225,20 @@ void output(vector<int> &v, vector<int>::iterator it)
 
 std::is_literal_type<std::string>::value;
 ```
+## 处理string对象中的字符
+
+>3.2.3 p82
+
+| 函数                    | 功能                                      |
+| ----------------------- | ----------------------------------------- |
+| isalbum(c)              | 当c为字母或数字                           |
+| isalpha(c)              | 当c为字母                                 |
+| iscntrl(c)              | 当c是控制字符                             |
+| isdigit(c)              | 当c为数字                                 |
+| isgraph(c)              | 当c不是空格但是可以打印                   |
+| islower(c) / isupper(c) | 当c为小写字母 / 大写字母                  |
+| isprint(c)              | 当c是可打印字符（是空格或者具有可视形式） |
+| ispunct(c)              | 当c是标点符号                             |
+| isspace(c)              | 当c是空白时                               |
+| isxdigit(c)             | 当c是十六进制数字时                       |
+| tolower(c) / toupper(c) | 转为小写 / 大写字母                       |

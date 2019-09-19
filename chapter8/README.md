@@ -22,6 +22,10 @@
         - [8.2.2 文件模式](#822-文件模式)
             - [指定文件模式的限制](#指定文件模式的限制)
             - [以 out 方式打开文件会丢弃已有数据](#以-out-方式打开文件会丢弃已有数据)
+    - [8.3 string 流](#83-string-流)
+        - [stringstream 的操作](#stringstream-的操作)
+        - [使用 istringstream](#使用-istringstream)
+        - [使用 ostringstream](#使用-ostringstream)
 
 <!-- /TOC -->
 
@@ -290,3 +294,75 @@ ofstream ofs(filanem, ofstream::app | ofstream::out);
 ```
 
 - 保留被 ofstream 打开文件中内容的方法是显示指定 app 或者 in 模式。
+
+## 8.3 string 流
+
+ssstream 头文件定义了三个类型来支持内存 IO，这些类型可以向 string 写入数据，从 string 读取数据。
+
+- istringstream 从 string 读取数据
+
+- ostringstream 向 string 写入数据
+
+- 头文件 stringstream 既可以从 string 读数据也可以向 string 写数据
+
+### stringstream 的操作
+
+操作 | 含义
+--- | ---
+sstream strm; | strm 是一个未绑定的 stringstream 对象
+sstream strm(s); | strm 是一个 sstream 对象，保存 string s 的一个拷贝。该构造函数是explicit的
+strm.str() | 返回 strm 保存的 string 的拷贝
+strm.str(s) | 将 string s 拷贝到 strm 中。返回 void
+
+### 使用 istringstream
+
+考虑这样的数据：
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g754waa0wgj20gi03kdgb.jpg)
+
+我们如果从 cin 中逐行读取这样的数据，可以使用 istringstream 处理每一行的字符串：
+
+```cpp
+struct PersonInfo {
+    string name;
+    vector<string> phones;
+};
+
+string line, word;
+vector<PersonInfo> people;
+while (getline(cin, line)) {
+    PersonInfo info;
+    istringstream record(line);
+    recore >> info.name;
+    while (record >> word) {
+        info.phones.push_back(word);
+    }
+    people.push_back(info);
+}
+```
+
+### 使用 ostringstream
+
+逐步构造输出并一起打印。
+
+我们可以将输出内容先写入到 ostringstream 中。
+
+如下判断电话号码是否全部合规之后，再打印出来。
+
+```cpp
+for (const auto &item: people) {
+    ostringstream rightnums, badnums;
+    for (const auto &phone: item.phones) {
+        if (!valid(phone)) badnums << " " << phone;
+        else rightnums << " " << format(phones);
+    }
+
+    if (badnums.str().empty()) {
+        cout << item.name << " " << rightnums.str() << endl;
+    }
+    else {
+        cerr << "input error: " << item.name
+        << " invalid nums: " << badnums.str() << endl;
+    }
+}
+```
