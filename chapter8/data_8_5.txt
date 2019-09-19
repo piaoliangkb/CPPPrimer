@@ -1,0 +1,17 @@
+#include <iostream>
+
+using namespace std;
+
+int main()
+{
+    int a;
+    if (cin >> a)
+    {
+        cout << "input successfully : " << a << endl;
+        cout << cin.rdstate() << endl;
+    }
+    else {
+        auto state = cin.rdstate();
+        cout << "inpur error : " << state << endl;
+    }
+}

@@ -16,6 +16,12 @@
     - [8.2 文件输入输出](#82-文件输入输出)
         - [fstream 的操作](#fstream-的操作)
         - [8.2.1 使用文件流对象](#821-使用文件流对象)
+            - [用 fstream 代替 iostream&](#用-fstream-代替-iostream)
+            - [成员函数 open 和 close](#成员函数-open-和-close)
+            - [自动析构和构造](#自动析构和构造)
+        - [8.2.2 文件模式](#822-文件模式)
+            - [指定文件模式的限制](#指定文件模式的限制)
+            - [以 out 方式打开文件会丢弃已有数据](#以-out-方式打开文件会丢弃已有数据)
 
 <!-- /TOC -->
 
@@ -203,3 +209,84 @@ f.close(); | 关闭与文件流 f 绑定的文件，返回 void
 f.is_open() | 检查与 f 绑定的文件是否成功打开且尚未关闭
 
 ### 8.2.1 使用文件流对象
+
+在新 C++ 标准中，文件名既可以是库类型 string 对象，也可以是 C 风格字符数组。
+
+#### 用 fstream 代替 iostream&
+
+在要求使用基类型对象的地方，我们可以使用继承类型的对象来替代。即：接受一个 iostream 类型引用或指针的函数，可以用一个对应的 fstream 或者 stringstream 来代替。
+
+#### 成员函数 open 和 close
+
+open 调用失败，failbit 会被置位。进行 open 是否成功的检测是一个好习惯。
+
+```cpp
+ofstream out;
+out.open(filename);
+
+if (out) {
+    //...
+}
+```
+
+- open 打开失败，failbit 会被置位。
+
+- open 打开成功，会设置流的状态，good() 变为 true。
+
+#### 自动析构和构造
+
+当一个 fstream 对象离开其作用域的时候，与之关联的文件会自动关闭。
+
+即当一个 fstrem 对象被销毁时，会自动调用 clsoe() 方法。
+
+```cpp
+for (auto p = argv + 1; p != argv + argc; ++p)
+{
+    ifstream input(*p);
+    if (input) {
+        // process something
+    }
+    else {
+        // ...
+    }
+}
+```
+
+### 8.2.2 文件模式
+
+每个文件流都有一个关联的文件模式(file mode)，用来指出如何使用文件。
+
+文件模式 | 含义
+--- | ---
+in | 以读方式打开
+out | 以写方式打开
+app | 每次写操作之前均定位到文件末尾
+ate | 打开文件后立即定位到文件末尾
+trunc | 截断文件
+binary | 以二进制方式进行 IO
+
+每个文件流都有默认的打开方式：
+
+- 与 ifstream 关联的文件使用 in 模式打开。
+
+- 与 ofstream 关联的文件使用 out 模式打开。
+
+- 与 fstream 关联的文件使用 in 和 out 模式打开。
+
+#### 指定文件模式的限制
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g74ymvmvz5j20tj0e0gr9.jpg)
+
+#### 以 out 方式打开文件会丢弃已有数据
+
+默认情况下，我们打开一个 ofstream 时，文件的内容会被丢弃。
+
+阻止清空的方法是同时指定 app 模式：
+
+```cpp
+ofstream ofs(filaname, ofstream::app); // 隐含了 ofstream::out 模式
+// or
+ofstream ofs(filanem, ofstream::app | ofstream::out);
+```
+
+- 保留被 ofstream 打开文件中内容的方法是显示指定 app 或者 in 模式。
