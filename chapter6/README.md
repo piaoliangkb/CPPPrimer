@@ -1209,7 +1209,7 @@ void useBigger(const string&, const string&, funcP2);
 
 ```cpp
 using F = int(int*, int);      // 函数返回类型为int，参数为 (int*, int)
-using PF = int(*)(int *, int);
+using PF = int(*)(int*, int); // 函数的返回类型是 int*，参数为 (int*, int)
 ```
 
 适用类型别名定义一个函数：
@@ -1223,13 +1223,18 @@ F *f1(int)；
 - 直接声明
 
 ```cpp
-int (*f1(int))(int *, int);
+int (*f1(int))(int*, int);  
+// f1 有形参 (int)，所以 f1 是一个函数；
+// f1 前边有 *，所以 f1 返回一个指针；
+// f1 返回值是一个函数指针，指向的函数返回值为 int，参数为(int*, int)
 ```
 
 - 尾置返回类型
 
 ```cpp
 auto f1(int) -> int(*)(int*, int);
+// 函数 f1 的参数为 int ;
+// 指向函数的返回值为 int，参数为 (int*, int)
 ```
 
 ### 使用 decltype 和 auto
