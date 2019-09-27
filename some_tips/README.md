@@ -36,6 +36,7 @@
 - [递归打印 vector](#递归打印-vector)
 - [检查类型是否为字面值(literal type)](#检查类型是否为字面值literal-type)
 - [处理string对象中的字符](#处理string对象中的字符)
+- [使用 std::boolalpha 在标准输出打印 true, false](#使用-stdboolalpha-在标准输出打印-true-false)
 
 <!-- /TOC -->
 --------------------------------
@@ -225,6 +226,7 @@ void output(vector<int> &v, vector<int>::iterator it)
 
 std::is_literal_type<std::string>::value;
 ```
+
 ## 处理string对象中的字符
 
 >3.2.3 p82
@@ -242,3 +244,17 @@ std::is_literal_type<std::string>::value;
 | isspace(c)              | 当c是空白时                               |
 | isxdigit(c)             | 当c是十六进制数字时                       |
 | tolower(c) / toupper(c) | 转为小写 / 大写字母                       |
+
+## 使用 std::boolalpha 在标准输出打印 true, false
+
+>p305 练习9.15等
+
+```cpp
+bool isOk()
+{
+    if(...) return true;
+    else return false;
+}
+
+std::cout << std::boolalpha << isOk() << std::endl; // 可以打印出 true or false 而不是 0 1
+```
