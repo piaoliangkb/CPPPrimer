@@ -37,6 +37,7 @@
 - [检查类型是否为字面值(literal type)](#检查类型是否为字面值literal-type)
 - [处理string对象中的字符](#处理string对象中的字符)
 - [使用 std::boolalpha 在标准输出打印 true, false](#使用-stdboolalpha-在标准输出打印-true-false)
+- [从数组向 vector 拷贝元素](#从数组向-vector-拷贝元素)
 
 <!-- /TOC -->
 --------------------------------
@@ -257,4 +258,17 @@ bool isOk()
 }
 
 std::cout << std::boolalpha << isOk() << std::endl; // 可以打印出 true or false 而不是 0 1
+```
+
+## 从数组向 vector 拷贝元素
+
+>p312 练习9.26
+
+可以提供数组首地址，和使用 std::end() 函数获得数组尾地址。
+
+```cpp
+int ia[] = {0, 1, 2, 3, 4, 5};
+std::vector<int> v(ia, std::end(ia));
+// 判断是否为2的倍数使用位运算
+if (*iter2 & 0x1) iter2 = lst.erase(iter2);
 ```

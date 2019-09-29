@@ -39,6 +39,17 @@
             - [插入范围内元素](#插入范围内元素)
             - [insert 的返回值](#insert-的返回值)
             - [emplace 进行构造而不是拷贝元素](#emplace-进行构造而不是拷贝元素)
+        - [9.3.2 访问元素](#932-访问元素)
+            - [访问成员函数返回的是引用](#访问成员函数返回的是引用)
+            - [使用 at 来实现下标安全操作](#使用-at-来实现下标安全操作)
+            - [练习9.24 空 vector 调用 at 下标运算符 front begin](#练习924-空-vector-调用-at-下标运算符-front-begin)
+        - [9.3.3 删除元素](#933-删除元素)
+            - [pop_front, pop_back](#pop_front-pop_back)
+            - [从容器内部删除元素](#从容器内部删除元素)
+            - [删除多个元素](#删除多个元素)
+        - [9.3.4 forward_list 的特殊操作](#934-forward_list-的特殊操作)
+        - [9.3.5 改变容器大小](#935-改变容器大小)
+        - [9.3.6 容器操作使得迭代器失效](#936-容器操作使得迭代器失效)
 
 <!-- /TOC -->
 
@@ -586,3 +597,192 @@ emplace 会根据参数来选择相应的构造函数：
 v.emplace_back(); // 使用 Sales_data 的默认构造函数
 v.emplace(iter, "100001"); // 使用只接受一个 string 的构造函数
 ```
+
+### 9.3.2 访问元素
+
+- 包括 array 在内每个顺序容器都有一个 front 成员函数，返回首元素的引用。
+
+- 除了 forward_list 之外每个顺序容器都有一个 back 成员函数，返回尾元素的引用。
+
+在调用 front 和 back 之前，要确保容器非空。如果容器为空，则行为是未定义的。
+
+- 下标操作 `c[n]` 返回 c 中下标为 n 的元素的引用，n 是无符号整数。若 `n>c.size()`函数行为未定义。
+
+- `c.at(n)` 操作返回下标为 n 的元素的引用。如果下标越界，则抛出 `out_of_range` 异常。
+
+#### 访问成员函数返回的是引用
+
+访问元素的成员函数（front, back, []下标运算, at）返回的都是引用。容器是 const 对象返回 const 引用，否则返回普通引用。
+
+```cpp
+auto &v = c.back();
+v = 40;
+```
+
+使用 auto 需要将变量定义为引用类型。
+
+#### 使用 at 来实现下标安全操作
+
+编译器不会检测下标越界。
+
+使用 at 成员函数在下标越界的时候，at 会抛出一个 `out_of_range` 异常。
+
+```cpp
+vector<string> svec;
+cout << svec[0];      // runtime error
+cout << svec.at(0);   // 抛出 out_of_range 异常
+```
+
+#### 练习9.24 空 vector 调用 at 下标运算符 front begin
+
+1. at 运算符
+
+```cpp
+std::vector<int> v;
+auto &i = v.at(0);
+```
+
+运行错误：
+
+```cpp
+terminate called after throwing an instance of 'std::out_of_range'
+  what():  vector::_M_range_check: __n (which is 0) >= this->size() (which is 0)
+```
+
+2. 下标运算符
+
+```cpp
+std::vector<int> v;
+auto &i = v[0];
+std::cout << i << std::endl;
+```
+
+运行结果：无输出
+
+3. front
+
+```cpp
+std::vector<int> v;
+auto &i = v.front();
+std::cout << i << std::endl;
+```
+
+运行结果：无输出
+
+4. begin
+
+```cpp
+std::vector<int> v;
+auto i = v.begin();
+std::cout << *i << std::endl;
+```
+
+运行结果：无输出
+
+### 9.3.3 删除元素
+
+- 删除元素的操作不适合 array，因为会改变容器大小。
+
+- `c.pop_back()` 删除尾元素，若 c 为空，则函数行为未定义。函数返回 void。不适用 forward_list。
+
+- `c.pop_front()`删除首元素，若 c 为空，则函数行为未定义。函数返回 void。不适用 vector，string。
+
+- `c.erase(p)` 删除迭代器 p 指定的元素，返回被删元素之后元素的迭代器(可以是尾后迭代器 off-the-end)。若 p 是尾后迭代器，则函数行为未定义。
+
+- `c.erase(b, e)`删除迭代器 b 和 e 所指定范围内的元素(前闭后开)，返回最后一个被删除元素之后的迭代器（返回值和 e 相等）。**若 e 为尾后迭代器，函数也返回尾后迭代器。**
+
+- `c.clear()`删除 c 中的所有元素。函数返回 void。
+
+- 删除元素的成员函数不会检查参数，所以删除元素之前必须确保他们是存在的。
+
+删除 deque 中 **除首尾之外的任何元素** 都会使得所有迭代器、引用和指针失效。
+
+指向 vecrtor 或 string 中 **删除点之后位置** 的迭代器、引用和指针失效。
+
+#### pop_front, pop_back
+
+`pop_front` 和 `pop_back` 成员函数分别删除首元素和尾元素。
+
+- vector 和 string 不支持 pop_front。
+
+- forward_list 不支持 pop_back。
+
+#### 从容器内部删除元素
+
+成员函数 erase 返回最后一个删除元素之后的迭代器，从一个 list 中删除所有奇数元素：
+
+```cpp
+list<int> lst = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+auto it = lst.begin();
+while (it != lst.end())
+{
+    if (*it % 2) it = lst.erase(it);
+    else ++it;
+}
+```
+
+#### 删除多个元素
+
+删除一对迭代器内的元素：
+
+```cpp
+iter1 = lst.erase(iter1, iter2);
+```
+
+执行结束之后，iter1 == iter2
+
+删除所有元素 `lst.clear();` 或者 `list.erase(lst.begin(), lst.end());`
+
+### 9.3.4 forward_list 的特殊操作
+
+forward_list 是一个单向链表，进行删除操作时，发生如图所示情况：
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7gimsk0twj20qk07ogmm.jpg)
+
+为了在单向链表中添加或删除一个元素，我们需要访问其前驱：
+
+- 定义了名为 `insert_after`, `emplace_after`, `erase_after` 的操作。
+
+在上图中，为了删除 elem3 ，应该在 elem2 上使用 erase_after 操作。
+
+- 定义了 `before_begin` 用来返回首前(off-the-beginning)迭代器，用来在链表首元素之前添加删除元素。
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7grnvnr9ej20u10g1tg0.jpg)
+
+例如，使用迭代器在一个 forward_list 删除奇数元素：
+
+```cpp
+forward_list<int> flst = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+auto prev = flst.before_begin();
+auto cur = flst.begin();
+while (cur != flst.end())
+{
+    if (*cur % 2) cur = flst.erase_after(prev); // 删除当前节点并指向下一个
+    else {
+        prev = cur;
+        ++cur;
+    }
+} 
+```
+
+### 9.3.5 改变容器大小
+
+- 可以使用 `resize` 来改变容器大小。
+
+- 如果当前大于所要求的大小，容器后部的元素会被删除。
+
+- 如果当前小于所要求的大小，会添加新元素到容器后（可选参数，若无参数执行值初始化；如果是类类型必须提供默认构造函数）
+
+```cpp
+c.resize(n);     // 调整大小为 n 个元素。
+c.resize(n, t);  // 调整大小为 n 个元素，对新元素初始化为 t
+```
+
+- 如果缩小容器，指向被删除元素的迭代器、引用、指针都会失效。
+
+- vector, string, deque 进行 resize 可能导致迭代器、引用、指针失效。
+
+### 9.3.6 容器操作使得迭代器失效
+
+向容器中添加元素和从容器中删除元素，可能会使只想容器元素的指针、引用或迭代器失效。
+
