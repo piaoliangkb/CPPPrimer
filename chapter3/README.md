@@ -18,6 +18,10 @@
             - [使用下标执行迭代](#使用下标执行迭代)
         - [3.2.4 补充](#324-补充)
             - [string.find()方法](#stringfind方法)
+            - [chapter 9.5 额外的 string 操作](#chapter-95-额外的-string-操作)
+                - [9.5.1 构造 string](#951-构造-string)
+                - [9.5.2 改变 string 的其他方法](#952-改变-string-的其他方法)
+                - [9.5.3 string 搜索](#953-string-搜索)
     - [3.3 vector](#33-vector)
         - [3.3.1 定义和初始化vector对象](#331-定义和初始化vector对象)
             - [列表初始化vector对象](#列表初始化vector对象)
@@ -253,6 +257,122 @@ auto pos1 = s.find(k);
 if (pos1 != s.npos) cout << pos1 << endl;
 else cout << "not found" << endl;
 ```
+
+#### chapter 9.5 额外的 string 操作
+
+##### 9.5.1 构造 string
+
+- `string s(cp, n)` 拷贝数组 cp 的前 n 个字节 **（cp 是数组 const char\* 类型）**
+
+```cpp
+const char* cp = "this is my world!";
+string cp1(cp, 7);
+cout << cp1 << endl; // res is 'this is'
+
+char notnull[] = {'h', 'e', 'r', 'o'};
+string s1(notnull, 4);
+cout << s1 << endl;  // res is 'hero'
+```
+
+- `string s(s1, pos)` s 是 string s1 从下标 pos 开始的拷贝 **（s1 是 string）**
+
+若 `pos > s1.size()` 则该构造函数行为未定义
+
+```cpp
+string s1 = "this is my whole world!";
+string s(s1, 7);
+cout << s << endl;  // res is ` my whole world!`
+```
+
+- `string s(s1, pos, len)` s 是 string s1 从下标 pos 开始长度为 len 个字符的拷贝
+
+若 `pos > s1.size()` 则该构造函数行为未定义；
+
+最多拷贝到结尾
+
+```cpp
+string s1 = "this is my whole world!";
+string s(s1, 8, 2);
+cout << s << endl;   // res is 'my'
+
+string s2(s1, 8, 100);
+cout << s2 << endl;  // res is 'my whole world!'
+```
+
+总结：
+
+1. 从 `const char*` 创建 string：
+
+拷贝前 n 个字符。
+
+指针指向的数组必须以空字符结尾，拷贝操作遇到空字符停止。
+
+如果传递给构造函数计数值，则不必异空字符结尾。
+
+未定义的行为：未传递计数值且数组未以空字符结尾 或 给定计数值大于数组大小。
+
+2. 从 string 拷贝字符：
+
+提供开始位置和位置之后拷贝的长度。
+
+out_of_range 异常：传递的位置大于 size。
+
+最多拷贝到结尾。
+
+- `substr(pos, n)`：返回一个 string，包含 s 中从 pos 开始长度为 n 个字符的拷贝。pos默认为0，n默认为 size-pos。即默认拷贝整个字符串。
+
+```cpp
+string s("yyfyyf.taobao.com");
+string s2 = s.substr(0, 6);    // yyfyyf
+string s3 = s.substr(7);       // taobao.com
+```
+
+##### 9.5.2 改变 string 的其他方法
+
+string 支持顺序容器的 **赋值运算符** 和 `assign`, `insert`, `erase`操作。
+
+- 此外，还定义了额外的 **支持下标** 的 `insert` 和 `erase` 版本。
+
+```cpp
+s.insert(s.size(), 5, '!');  // 在结尾插入5个'!'
+s.erase(s.size()-5, 5);      // 删除结尾5个字符
+
+string s1 = "hello", s2 = "world";
+s2.insert(0, s1);  // s2 = "helloworld"
+s1.insert(0, s2, 0, s2.size());  // 在 s1 的开头位置插入 s2 从 0 到 s2.size() 的内容
+// s1 = 'helloworldhello'
+```
+
+- 接受 C 风格字符数组的 `insert` 和 `assign` 版本。
+
+```cpp
+const char *cp = "hello, world";
+s.assign(cp, 5);   // 将前5个字符拷贝给 s
+s.insert(s.size(), cp+5);  // s = "hello, world"
+```
+
+- `append` 在 string 结尾插入内容
+
+- `replace` 替换字符串中的内容，相当于 `erase` + `insert`
+
+```cpp
+string s = "c++ primer 4th edition";
+s.erase(11, 3);
+s.insert(11, "5th"); // s = "c++ primer 5th edition"
+
+// 上述操作等价于
+
+s.replace(11, 3, "5th");
+```
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7r4dfknilj20sh0lxtg0.jpg)
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7r4e1hek5j20sl0b4q52.jpg)
+
+##### 9.5.3 string 搜索
+
+
+
 
 ## 3.3 vector
 

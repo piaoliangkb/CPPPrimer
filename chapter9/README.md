@@ -52,6 +52,9 @@
         - [9.3.6 容器操作使得迭代器失效](#936-容器操作使得迭代器失效)
             - [添加元素](#添加元素)
             - [删除元素](#删除元素)
+    - [9.4 vector 对象是如何增长的](#94-vector-对象是如何增长的)
+        - [管理容量的成员函数](#管理容量的成员函数)
+        - [capacity 和 size](#capacity-和-size)
 
 <!-- /TOC -->
 
@@ -807,4 +810,46 @@ c.resize(n, t);  // 调整大小为 n 个元素，对新元素初始化为 t
 - list 和 forward_list：所有都有效。
 
 对 vector, string, deque 来说，确保每次改变容器的操作之后都重新定位迭代器。
+
+## 9.4 vector 对象是如何增长的
+
+- 为了支持快速随机访问，vector 将元素连续存储。
+
+- 当不得不获取新的内存时，vector 和 string 的实现通常会分配比需求空间更大的内存空间。
+
+### 管理容量的成员函数
+
+- `shrink_to_fit()` ：
+
+1. 将 `capacity()` 减小为与 `size()` 相同大小；
+
+2. vector, string, deque 可用；
+
+3. 通过调用 `shrink_to_fit()` 来退回 deque, vector, string 不需要的内存空间；
+
+4. 具体实现可以选择忽略此请求，即不保证调用后一定退回内存空间；
+
+- `capacity()` ：
+  
+1. 在不重新分配内存的情况下最多保存多少元素；
+
+2. vector, string 可用
+
+- `reserve(n)` ：
+
+1. 分配至少能容纳 n 个元素的内存空间；
+
+2. vector, string 可用；
+
+3. 不改变容器中元素的数量，只影响预先分配；
+
+4. n 小于当前容量则什么都不做，即调用 `reserve` 不会减小容器占用的内存空间；和 `resize` 对比，`resize` 不会改变容量，会改变元素数目；
+
+### capacity 和 size
+
+- capacity 是指不分配新的内存空间的条件下最多可以保存多少元素。
+
+- size 是指已经保存的元素数目。
+
+- 只有执行 insert 操作的时候 size 和 capacity 相等，或者调用 resize 和 reserve 时给定大小超过当前 capacity，vector 才重新分配内存空间。
 
