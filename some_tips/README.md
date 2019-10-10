@@ -38,6 +38,8 @@
 - [处理string对象中的字符](#处理string对象中的字符)
 - [使用 std::boolalpha 在标准输出打印 true, false](#使用-stdboolalpha-在标准输出打印-true-false)
 - [从数组向 vector 拷贝元素](#从数组向-vector-拷贝元素)
+- [迭代器运算符 和 迭代器支持的算术运算](#迭代器运算符-和-迭代器支持的算术运算)
+- [使用 cout 输出 float, double 指定的精度](#使用-cout-输出-float-double-指定的精度)
 
 <!-- /TOC -->
 --------------------------------
@@ -228,7 +230,7 @@ void output(vector<int> &v, vector<int>::iterator it)
 std::is_literal_type<std::string>::value;
 ```
 
-## 处理string对象中的字符
+## 处理string对象中的字符(such as `isdigit`, `isalpha`..)
 
 >3.2.3 p82
 
@@ -297,3 +299,45 @@ if (*iter2 & 0x1) iter2 = lst.erase(iter2);
 | iter -= n     | 将iter-n的记过赋给iter                                                                                |
 | iter1 - iter2 | 同一个容器中两个迭代器之间的距离                                                                      |
 | \>, >=, <, <= | 指向同一个容器中迭代器前后位置的比较                                                                  |
+
+## 使用 cout 输出 float, double 指定的精度
+
+>p327 9.5.5 string 和 double 类型数值转换
+
+在使用 cout 输出 float, double 的时候，默认会输出一定精度的数值，（6位）：
+
+```cpp
+double d = 3.1415909988;
+std::cout << d << std::endl; // 3.14159
+double d1 = 3.1415;
+std::cout << d1 << std::endl;// 3.1415
+```
+
+我们若要输出所有的精度，需要通过 `cout.precision(n)` 进行设定。
+
+
+>https://stackoverflow.com/questions/45084317/what-is-the-role-of-stdsetprecision-without-stdfixed-in-c  stackoverflow 问题1
+>http://www.cplusplus.com/reference/ios/ios_base/precision/
+
+>Using the default floating-point notation, the precision field specifies the maximum number of meaningful digits to display in total counting both those before and those after the decimal point.  
+使用默认的 float-point 表达方式，precision 制定了小数点前后表达数字的最大值。
+
+```cpp
+double d = 3.1415909988;
+std::cout.precision(11);
+std::cout << d << std::endl; // 3.1415909988
+
+
+std::cout.precision(10);
+std::cout << std::fixed << d << std::endl; // 3.1415909988
+```
+
+注意是否使用 `std::fixed` 是有区别的。
+
+>In both the fixed and scientific notations, the precision field specifies exactly how many digits to display after the decimal point, even if this includes trailing decimal zeros.  
+使用 std::fixed 之后，precision 指定了小数点之后显式的位数。不足则补0
+
+```cpp
+double item1 = 0.01;
+std::cout << std::fixed << item1 << std::endl;
+```

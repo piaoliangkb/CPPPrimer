@@ -55,6 +55,10 @@
     - [9.4 vector 对象是如何增长的](#94-vector-对象是如何增长的)
         - [管理容量的成员函数](#管理容量的成员函数)
         - [capacity 和 size](#capacity-和-size)
+    - [9.5 额外的 string 操作](#95-额外的-string-操作)
+    - [9.6 容器适配器](#96-容器适配器)
+        - [stack](#stack)
+        - [queue](#queue)
 
 <!-- /TOC -->
 
@@ -853,3 +857,76 @@ c.resize(n, t);  // 调整大小为 n 个元素，对新元素初始化为 t
 
 - 只有执行 insert 操作的时候 size 和 capacity 相等，或者调用 resize 和 reserve 时给定大小超过当前 capacity，vector 才重新分配内存空间。
 
+## 9.5 额外的 string 操作
+
+见 chapter3
+
+## 9.6 容器适配器
+
+标准库定义了三个顺序容器适配器：`stack`, `queue`, `priority_queue`.
+
+- 一个容器适配器可以接受一个已有的容器类型，使该适配器的行为看起来像一种不同的类型
+
+- 所有容器适配器都支持的操作如下：
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7svuw26fdj20uy0f9aen.jpg)
+
+- 所有适配器都a要求容器具有添加和删除元素的能力，所以不能使用 `array`。
+
+- 所有适配器都要求容器具有添加，删除，访问尾元素的能力，所以不能使用 `forward_list`。
+
+适配器 | 要求操作 | 可选构造容器| 默认容器
+--- | --- | --- |---
+stack | push_back, pop_back, back | deque, list, vector | deque
+queue | back, push_back, front, push_front | deque, list, vector | deque
+priority_queue | front, push_back, pop_back, 随机访问 | vector, deque | vector
+
+- 指定适配器的底层容器
+
+```cpp
+stack<string> stk1;
+stack<string, vector<string>> stk2; // 指定底层容器为 vector
+```
+
+### stack
+
+```cpp
+stack<int> int_stack;
+for (size_t i=0; i<10; ++i)
+{
+    int_stack.push(i);
+}
+while (!int_stack.empty())
+{
+    cout << int_stack.top() << endl;
+    int_stack.pop();
+}
+```
+
+栈的其他操作：
+
+操作 | 含义
+-- | --
+stack.pop() | 删除栈顶元素
+stack.push(item) | 将 item 压入栈顶
+stack.emplace(args) | 通过 args 构造元素压入栈顶
+stack.top() | 返回栈顶元素
+
+### queue
+
+`queue` 和 `priority_queue` 都定义在头文件 `queue` 中。
+
+- `queue` 采用先进先出的策略，进入队列对象放到队尾，离开队列对象从队首删除。
+
+- `priority_queue` 为队列中的元素建立优先级，新加入的元素排在所有优先级比它低的元素之前。
+
+队列的操作：
+
+操作 | 含义
+--- | ---
+q.pop() | 删除 queue 的队首元素或者 priority_queue 的最高优先级元素，返回 void
+q.front() | 返回首元素
+q.back() | 返回尾元素，只适用于 queue
+q.top() | 返回最高优先级元素，只适用于 priority_queue
+q.push(item) | 在 queue 的结尾或者 priority_queue 某个位置添加元素
+q.emplace(args) | 同上，构造元素

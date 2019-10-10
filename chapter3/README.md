@@ -22,6 +22,9 @@
                 - [9.5.1 构造 string](#951-构造-string)
                 - [9.5.2 改变 string 的其他方法](#952-改变-string-的其他方法)
                 - [9.5.3 string 搜索](#953-string-搜索)
+                    - [指定搜索位置](#指定搜索位置)
+                    - [compare 函数](#compare-函数)
+                - [9.5.5 数值和 string 转换](#955-数值和-string-转换)
     - [3.3 vector](#33-vector)
         - [3.3.1 定义和初始化vector对象](#331-定义和初始化vector对象)
             - [列表初始化vector对象](#列表初始化vector对象)
@@ -371,7 +374,133 @@ s.replace(11, 3, "5th");
 
 ##### 9.5.3 string 搜索
 
+- `find` 函数完成最简单的搜索，返回第一个匹配位置的下标，否则返回 `string::npos`
 
+```cpp
+string name("annabella");
+string s("bella");
+auto pos = name.find("Ana");
+if (pos != string::npos)
+{
+    cout << pos << endl;
+}
+else cout << "cannot find" << endl;
+```
+
+- `rfind` 返回最后一个出现的位置，否则返回 `string::npos`
+
+- `find_first_of` 和 `find_last_of` 分别查找字符第一次出现的位置和最后一次出现的位置，否则返回 `string::npos` （匹配）
+
+```cpp
+string numbers("1234567890"), code("zxc00234");
+cout << code.find_last_of(numbers) << endl; // code 中最后一次出现数字的位置
+cout << code.find_first_of(numbers) << endl;// code 中第一次出现数字的位置
+```
+
+- `find_first_not_of` 和 `find_last_not_of` 查找字符中第一个不在参数中的字符的位置和最后一个不在参数中的字符的位置
+
+```cpp
+string numbers("1234567890"), code("11223zxcvbb");
+auto pos1 = code.find_first_not_of(numbers);  // pos1 = 5
+auto pos2 = code.find_last_not_of(numbers);   // pos2 = 10
+auto pos3 = code.find_first_not_of("123zxcvb"); // pos3 = string::npos
+```
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7rr9vppp8j20se097juh.jpg)
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7rra7eeivj20sf07wjtk.jpg)
+
+其中每个操作都可以指定一个开始搜索的位置 `pos`
+
+- `cp, pos`
+
+```cpp
+string name("annabellanna");
+const char* cp = "nn";
+string::size_type pos = 0;
+
+while ((pos = name.find(cp, pos)) != string::npos)
+{
+    cout << "found string [" << cp << "] at index " << pos << endl;
+    ++pos; 
+}
+/*
+在字符串 name 中搜索指针 cp 指向的以空字符结尾的 C 风格的字符串
+found string [nn] at index 1
+found string [nn] at index 9
+*/
+```
+
+- `cp, pos, n`
+
+```cpp
+string name("annabellanna");
+const char* cp = "nn";
+string::size_type pos = 0;
+
+while ((pos = name.find(cp, pos, 1)) != string::npos)
+{
+    cout << "found string [" << cp << "] at index " << pos << endl;
+    ++pos; 
+}
+/*
+搜索指针 cp 指向的数组的前 1 个字符，即"n"
+found string [nn] at index 1
+found string [nn] at index 2
+found string [nn] at index 9
+found string [nn] at index 10
+*/
+```
+
+###### 指定搜索位置
+
+通过指定搜索位置在字符串中循环搜索某个字符串出现的位置。
+
+```cpp
+string name("annabellanna");
+string s("anna");
+string::size_type pos = 0;
+while ((pos = name.find(s, pos)) != string::npos)
+{
+    cout << "found string [" << s << "] at index " << pos << endl;
+    ++pos; 
+}
+/*
+found string [anna] at index 0
+found string [anna] at index 8
+*/
+```
+
+###### compare 函数
+
+`compare` 函数的几种参数形式：
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7rzutdmjsj20sh0bm77i.jpg)
+
+##### 9.5.5 数值和 string 转换
+
+C++11 新标准引入了多个函数实现数值数据和 string 之间的转换
+
+```cpp
+double d = 3.1415909988;
+std::string s = std::to_string(d);
+std::cout << s << std::endl; // 3.141591
+double dd = std::stod(s);    // dd = 3.14159
+```
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7s4kf2vmmj20uu0elq8t.jpg)
+
+转换函数如上图所示，
+
+- string 参数中第一个非空白字符比如是符号 (+, -) 或者数字。
+
+- 可以以小数点开头，包含 e 来表示指数部分，也可以以 0x 或者 0X 开头表示十六进制数字。
+
+- 根据不同的基数可以包含字母字符来表示大于数字9的数。
+
+- 如果 string 不能转换为数值，抛出 `invalid_argument` 异常。
+
+- 如果转换得到的数值不能用任何类型来表示，抛出 `out_of_range` 异常。
 
 
 ## 3.3 vector
