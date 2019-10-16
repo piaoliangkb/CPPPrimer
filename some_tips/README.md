@@ -35,11 +35,12 @@
 - [指针的引用](#指针的引用)
 - [递归打印 vector](#递归打印-vector)
 - [检查类型是否为字面值(literal type)](#检查类型是否为字面值literal-type)
-- [处理string对象中的字符](#处理string对象中的字符)
+- [处理string对象中的字符(such as `isdigit`, `isalpha`..)](#处理string对象中的字符such-as-isdigit-isalpha)
 - [使用 std::boolalpha 在标准输出打印 true, false](#使用-stdboolalpha-在标准输出打印-true-false)
 - [从数组向 vector 拷贝元素](#从数组向-vector-拷贝元素)
 - [迭代器运算符 和 迭代器支持的算术运算](#迭代器运算符-和-迭代器支持的算术运算)
 - [使用 cout 输出 float, double 指定的精度](#使用-cout-输出-float-double-指定的精度)
+- [sizeof 求数组大小](#sizeof-求数组大小)
 
 <!-- /TOC -->
 --------------------------------
@@ -341,3 +342,21 @@ std::cout << std::fixed << d << std::endl; // 3.1415909988
 double item1 = 0.01;
 std::cout << std::fixed << item1 << std::endl;
 ```
+
+## sizeof 求数组大小
+
+>p341 拷贝算法
+
+对于数组 `int a[] = {1, 2, 3, 4, 5}`
+
+- `sizeof(a) = 20;` sizeof 数组名表示数组占用字节大小。
+
+- `sizeof(*a) = 4;` 表示元素占用字节大小。
+
+所以 `sizeof(a)/sizeof(*a)` 代表数组大小。
+
+对于指针 `int *aa = new int[5]`
+
+- `sizeof(aa) = 8;` sizeof 指针名计算指针的大小，8字节，64位。
+
+- `sizeof(*aa) = 4;` 求元素占用字节大小。
