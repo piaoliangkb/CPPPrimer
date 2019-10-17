@@ -1245,7 +1245,7 @@ auto f1(int) -> int(*)(int*, int);
 
 ```cpp
 string::size_type sumLength(const string&, const string&);
-string::size)type largerLength(const string&, const string&);
+string::size_type largerLength(const string&, const string&);
 ```
 
 我们让 getFunction 函数返回两个函数中的一个，那么定义如下：
