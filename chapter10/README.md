@@ -39,6 +39,12 @@
       - [istream_iterator](#istreamiterator)
       - [ostream_iterator](#ostreamiterator)
     - [10.4.3 反向迭代器](#1043-%e5%8f%8d%e5%90%91%e8%bf%ad%e4%bb%a3%e5%99%a8)
+  - [10.5 泛型算法结构](#105-%e6%b3%9b%e5%9e%8b%e7%ae%97%e6%b3%95%e7%bb%93%e6%9e%84)
+    - [10.5.1 5类迭代器](#1051-5%e7%b1%bb%e8%bf%ad%e4%bb%a3%e5%99%a8)
+    - [10.5.2 算法形参模式](#1052-%e7%ae%97%e6%b3%95%e5%bd%a2%e5%8f%82%e6%a8%a1%e5%bc%8f)
+  - [10.6 list, forward_list 特定容器算法](#106-list-forwardlist-%e7%89%b9%e5%ae%9a%e5%ae%b9%e5%99%a8%e7%ae%97%e6%b3%95)
+      - [splice 成员函数进行拼接操作](#splice-%e6%88%90%e5%91%98%e5%87%bd%e6%95%b0%e8%bf%9b%e8%a1%8c%e6%8b%bc%e6%8e%a5%e6%93%8d%e4%bd%9c)
+      - [链表特有的操作会改变容器](#%e9%93%be%e8%a1%a8%e7%89%b9%e6%9c%89%e7%9a%84%e6%93%8d%e4%bd%9c%e4%bc%9a%e6%94%b9%e5%8f%98%e5%ae%b9%e5%99%a8)
 
 <!-- /TOC -->
 
@@ -249,16 +255,18 @@ auto end_unique = std::unique(v.begin(), v.end());
 算法 | 头文件 | 作用
 --- | --- | ---
 `sort` | `algorithm` | 根据谓词进行排序
-`stable_sort` | `algorithm` | 维持原有元素的顺序，根据谓词进行排序
-`partition` | `algorithm` | 根据谓词将使得谓词为 true 的成员排在容器前半部分，其他后半部分，返回指向最后一个元素为 true 之后的位置
-`stable_partition` | `algorithm` | 同 `partition` 重排元素，原始序列元素相对顺序不变
-`find_if` | `algorithm` | 返回第一个使得谓词返回非0值的元素
-`foe_each` | `algorithm` | 接受一个可调用对象，并对序列中的所有元素调用该对象
-`transformer` | `algorithm` | 接受一个输入序列，一个目标位置和一个可调用对象，对输入序列每个元素调用最后一个参数并写结果到目标位置
-`count_if` | `algorithm` | 接受一个输入序列和一个谓词，计算有多少使得谓词为真的元素
-`unique_copy` | `algorithm` | 拷贝不重复的元素到目标地址
-`reverse_copy` | `algorithm` | 反转拷贝到目标地址
-
+`stable_sort` | .. | 维持原有元素的顺序，根据谓词进行排序
+`partition` | .. | 根据谓词将使得谓词为 true 的成员排在容器前半部分，其他后半部分，返回指向最后一个元素为 true 之后的位置
+`stable_partition` | .. | 同 `partition` 重排元素，原始序列元素相对顺序不变
+`find_if` | .. | 返回第一个使得谓词返回非0值的元素
+`foe_each` | .. | 接受一个可调用对象，并对序列中的所有元素调用该对象
+`transformer` | .. | 接受一个输入序列，一个目标位置和一个可调用对象，对输入序列每个元素调用最后一个参数并写结果到目标位置
+`count_if` | .. | 接受一个输入序列和一个谓词，计算有多少使得谓词为真的元素
+`unique_copy` | .. | 拷贝不重复的元素到目标地址
+`reverse` | .. | 反转元素
+`reverse_copy` | .. | 反转拷贝到目标地址
+`remove_if` | .. | 根据谓词进行删除
+`remove_copy_if` | .. | 根据谓词将删除元素后的结果拷贝到目标地址，原容器不变
 
 ### 10.3.1 向算法传递参数
 
@@ -719,3 +727,63 @@ cout << string(comma.base(), line.cend()) << endl;
 ```
 
 ![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g82au0nicij20jk07dwfe.jpg)
+
+## 10.5 泛型算法结构
+
+### 10.5.1 5类迭代器
+
+算法要求的迭代器操作可以分为5个迭代器类别(iterator category)
+
+![image.png](https://ws1.sinaimg.cn/mw690/7e197809ly1g82bhsnaa5j20t407dac2.jpg)
+
+### 10.5.2 算法形参模式
+
+![image.png](https://ws1.sinaimg.cn/mw690/7e197809ly1g82bovy20qj20dz03sgm9.jpg)
+
+## 10.6 list, forward_list 特定容器算法
+
+通用版本的 `sort` 函数要求随机访问迭代器，但是 `list` 和 `forward_list` 分别提供双向迭代器和前向迭代器，所以不通用。
+
+- `list` 和 `forward_list` 定义了独有的 `sort`, `merge`, `remove`, `unique`
+
+- 对于这两个链表，应该优先使用成员函数版本的算法而不是通用算法，性能好。
+
+`list` 和 `forward_list` 成员函数版本的算法：
+
+- `lst.merge(lst2)` / `lst.merge(lst2, cmp)` 
+
+将来自 lst2 的元素合并入 lst。 lst 和 lst2 都必须是有序的，元素将从 lst2 删除，合并之后 lst2 变为空。默认版本使用 `<` 运算符，第二个版本使用给定的比较操作。
+
+- `lst.remove(val)` / `lst.remove(pred)`
+
+调用 `erase` 删除与给定值相等(==) 的元素或者使得一元谓词成真的每个元素。
+
+- `lst.reverse()`
+
+反转链表
+
+- `lst.sort()` / `lst.sort(cmp)`
+
+使用 `<` 或者 给定的比较操作对元素进行排序
+
+- `lst.unique()` / `lst.unique(pred)`
+
+使用 `erase` 删除同一个值的连续拷贝，第一个版本使用 `==` ，第二个版本使用给定的二元谓词
+
+#### splice 成员函数进行拼接操作
+
+链表数据结构特有的 `splice` 算法
+
+`list.splice(args)` 或者 `flse.splice_after(args)` 的参数：
+
+![image.png](https://ws1.sinaimg.cn/mw690/7e197809ly1g82c51cl0fj20se0cxwjl.jpg)
+
+#### 链表特有的操作会改变容器
+
+链表特有版本的算法与通用算法的一个区别就是：链表版本会改变底层的容器。
+
+>`std::remove` : 通过以满足不移除的元素出现在范围起始的方式，迁移（以移动赋值的方式）范围中的元素进行移除。保持剩余元素的相对顺序，且不更改容器的物理大小。指向范围的新逻辑结尾和物理结尾之间元素的迭代器仍然可解引用，但元素自身拥有未指定值（因为可移动赋值 (MoveAssignable) 的后置条件）。调用 remove 典型地后随调用容器的 erase 方法，它擦除未指定值并减小容器的物理大小，以匹配其新的逻辑大小。
+
+- `remove` 的链表版本会删除指定的元素，`unique` 的链表版本会删除第二个和后继的重复元素。
+
+- `merge` 和 `splice` 会销毁他们的参数。
