@@ -32,6 +32,13 @@
     - [10.3.4 参数绑定](#1034-%e5%8f%82%e6%95%b0%e7%bb%91%e5%ae%9a)
       - [bind 函数](#bind-%e5%87%bd%e6%95%b0)
         - [用 bind 重排函数顺序](#%e7%94%a8-bind-%e9%87%8d%e6%8e%92%e5%87%bd%e6%95%b0%e9%a1%ba%e5%ba%8f)
+        - [使用 ref 传递给 bind 引用](#%e4%bd%bf%e7%94%a8-ref-%e4%bc%a0%e9%80%92%e7%bb%99-bind-%e5%bc%95%e7%94%a8)
+  - [10.4 再探迭代器](#104-%e5%86%8d%e6%8e%a2%e8%bf%ad%e4%bb%a3%e5%99%a8)
+    - [10.4.1 插入迭代器](#1041-%e6%8f%92%e5%85%a5%e8%bf%ad%e4%bb%a3%e5%99%a8)
+    - [10.4.2 iostream 迭代器](#1042-iostream-%e8%bf%ad%e4%bb%a3%e5%99%a8)
+      - [istream_iterator](#istreamiterator)
+      - [ostream_iterator](#ostreamiterator)
+    - [10.4.3 反向迭代器](#1043-%e5%8f%8d%e5%90%91%e8%bf%ad%e4%bb%a3%e5%99%a8)
 
 <!-- /TOC -->
 
@@ -249,6 +256,8 @@ auto end_unique = std::unique(v.begin(), v.end());
 `foe_each` | `algorithm` | 接受一个可调用对象，并对序列中的所有元素调用该对象
 `transformer` | `algorithm` | 接受一个输入序列，一个目标位置和一个可调用对象，对输入序列每个元素调用最后一个参数并写结果到目标位置
 `count_if` | `algorithm` | 接受一个输入序列和一个谓词，计算有多少使得谓词为真的元素
+`unique_copy` | `algorithm` | 拷贝不重复的元素到目标地址
+`reverse_copy` | `algorithm` | 反转拷贝到目标地址
 
 
 ### 10.3.1 向算法传递参数
@@ -554,3 +563,159 @@ ostream& print(ostream &os, const string& s, char c)
 
 for_each(words.begin(), words.end(), bind(print, ref(cout), _1, ' '));
 ```
+
+## 10.4 再探迭代器
+
+头文件 `iterator` 中还定义了额外几种迭代器：
+
+- 插入迭代器 `insert iterator`
+
+- 流迭代器 `stream iterator`：被绑定到输入或者输出流，用来遍历它们。
+
+- 反向迭代器 `reverse iterator`
+
+- 移动迭代器 `move iterator`：这些迭代器不拷贝其中元素，而是移动他们。
+
+### 10.4.1 插入迭代器
+
+插入器是一个迭代器适配器，接受一个容器，生成一个迭代器。
+
+插入迭代器的三个类型：
+
+- `back_inserter` 使用 `push_back` 的迭代器
+
+- `front_inserter` 使用 `push_front` 的迭代器，元素总是插入到第一个元素之前。
+
+- `inserter` 使用 `insert` 的迭代器，第二个参数为指向给定容器的迭代器，插入到给定迭代器之前。
+
+例如：
+
+```cpp
+list<int> lst = {1, 2, 3, 4}, lst1, lst2;
+copy(lst.cbegin(), lst.cend(), front_inserter(lst1));  // 4 3 2 1
+copy(lst.cbegin(), lst.cend(), inserter(lst2, lst2.begin()));  // 1 2 3 4 
+```
+
+为何 `inserter(lst2, lst2.begin())` 所有顺序都是正序？
+
+>[知乎：插入迭代器inserter在copy函数的运行机制是什么？](https://www.zhihu.com/question/38316591)  
+>`inserter` 相当于先调用容器的 `insert()` 函数，该函数指向被插入的新元素，然后递增 `insert()` 返回的迭代器，即指向初始给的迭代器。
+
+假如 `it` 是由 `inserter` 生成的迭代器，则 `*it = val;` 与如下代码效果一样
+
+```cpp
+it = c.insert(it, val);  // 将 val 插入到 it 之前，将新元素位置赋值给 it
+++it;                    // 递增 it 让它指向原来的元素
+```
+
+### 10.4.2 iostream 迭代器
+
+#### istream_iterator
+
+- `istream_iterator` 使用 `>>` 读取输入流，要求要读取的类型必须定义了输入运算符
+
+```cpp
+istream_iterator<int> int_it(cin); // 从 cin 读取 int
+istream_iterator<int> eof;         // 默认初始化为空，可以当作尾后迭代器使用
+
+ifstream in(filename);
+istream_iterator<string> str_it(in); // 读取字符串
+```
+
+例如从 `cin` 读取数据并放入 `vector`：
+
+```cpp
+vector<int> v;
+istream_iterator<int> int_it(cin), eof;
+while (int_it != eof)
+{
+    v.push_back(*int_it++);
+}
+```
+
+或者使用迭代器范围来构造 vector：
+
+```cpp
+istream_iterator<int> int_it(cin), eof;
+vector<int> vec(int_it, eof);  
+```
+
+或者通过算法来对流迭代器读取内容进行求值：
+
+```cpp
+istream_iterator<int> int_it(cin), eof;
+cout << accumulate(int_it, eof, 0) << endl;
+```
+
+- `istream_iterator` 的操作：
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8282553rgj20sl0blgpd.jpg)
+
+- `istream-iterator` 允许懒惰求值
+
+当绑定迭代器到一个流时，标准库并不保证迭代器立即从流读取数据，当我们使用迭代器的时候才会读取。
+
+标准库保证当我们第一次解引用迭代器之前，从流中读取数据的操作完成。
+
+#### ostream_iterator
+
+- `ostream_iterator` 使用 `<<` ，要求要读取的类型必须定义了输入运算符
+
+- `ostream_iterator` 可选第二参数字符串，输出每个元素之后可以打印该字符串。**字符串必须是一个C风格字符串（字符串字面常量或者以空字符结尾的字符数组的指针）**
+
+- `ostream_iterator` 必须绑定到一个指定的流，不允许空或者表示尾后位置。
+
+- `ostream_iterator` 操作：
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g828ctezmaj20si0a6adc.jpg)
+
+利用 `ostream_iterator` 来输出值的序列：
+
+```cpp
+ostream_iterator<int> out_it(cout, " ");
+for (auto &i : v)
+    *out_it++ = i; // or out_it = i;
+cout << endl;
+```
+
+当我们向 `out_it` 赋值的时候，可以忽略递增和解引用运算符，因为它们不做任何事情。但是推荐协商，保持与其他迭代器一致。
+
+用 `copy` 打印 vector 中的元素：
+
+```cpp
+ostream_iterator<int> out_it(cout, " ");
+copy(v.cbegin(), v.cend(), out_it);
+// or
+copy(v.cbegin(), v.cend(), ostream_iterator<int>(cout, " "));
+```
+
+### 10.4.3 反向迭代器
+
+除了 `forward_list` 之外，其他容器都支持反向迭代器，可以调用 `rbegin`, `rend`, `crbegin`, `crend` 来获得反向迭代器。
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g82alfpmw9j20n108g75k.jpg)
+
+- 反向迭代器需要递减运算符，除了 `forward_list` 之外，标准容器上的其他迭代器都既支持递增运算和递减运算。
+
+例如，逆序排列 vector：
+
+```cpp
+sort(vec.rbegin(), vec.rend());
+```
+
+对于一个 `,` 分隔的字符列表，查找最后一个元素
+
+```cpp
+auto comma = find(line.crbegin(), line.crend(), ',');
+cout << string(line.crbegin(), comma) << endl;   // 错误，将逆序打出
+```
+
+若要正常打出内容，需要将 `comma` 转换成一个普通弄迭代器，能在容器 `line` 中正向移动。
+
+- 可以通过调用 `reverse_iterator` 的 `base` 成员函数完成转换：
+
+```cpp
+cout << string(comma.base(), line.cend()) << endl;
+```
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g82au0nicij20jk07dwfe.jpg)
