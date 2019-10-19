@@ -360,3 +360,22 @@ std::cout << std::fixed << item1 << std::endl;
 - `sizeof(aa) = 8;` sizeof 指针名计算指针的大小，8字节，64位。
 
 - `sizeof(*aa) = 4;` 求元素占用字节大小。
+
+## remove_if + erase 删除容器中符合要求的元素
+
+>ex11.4
+
+>ref: https://en.wikipedia.org/wiki/Erase%E2%80%93remove_idiom
+
+`std::remove_if` 函数可以接受一个谓词，将容器中使得谓词为真的元素放到容器的末尾，返回最后一个使得谓词为假的元素的后一个元素迭代器。
+
+`erase` 为容器特有的操作，可以删除范围内的元素。
+
+两个函数配合可以删除容器中符合要求的元素：
+
+```cpp
+word.erase(remove_if(word.begin(), word.end(), 
+                            [](const char c){return ispunct(c);}), word.end());
+```
+
+上述删除了 `word` 这个字符串中的标点符号。
