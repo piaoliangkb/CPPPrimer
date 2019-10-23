@@ -457,9 +457,9 @@ initializer_list 提供的操作有：
 
 - 赋值初始化，列表的元素是初始值的副本，类型为const：`initializer_list<T> list{a, b, c..};`
 
-- 拷贝或赋值对象：`list2 = list1;` 或者 `list2(list2);`，不会拷贝列表中的元素，原始列表和副本共享元素。
+- 拷贝或赋值对象：`list2 = list1;` 或者 `list2(list1);`，不会拷贝列表中的元素，原始列表和副本共享元素。
 
-- 元素数量，首元素指针，尾元素下一个位置的指针：`list.size()`, `list.begin()`, 'list.end()'
+- 元素数量，首元素指针，尾元素下一个位置的指针：`list.size()`, `list.begin()`, `list.end()`
 
 initializer_list 对象中的元素永远是常量值。
 
@@ -469,6 +469,33 @@ void error_msg(initializer_list<string> list)
     for (const auto &s : list)
         cout << s << endl;
 }
+```
+
+若某个类定义了参数为 `initializer_list` 的构造函数，对类进行初始化：
+
+```cpp
+class StrBlob {
+public:
+  using size_type = std::vector<std::string>::size_type;
+
+  // 默认构造函数
+  StrBlob() : data(std::shared_ptr<std::vector<std::string>>()) {}
+  // 接受一个初始值列表的构造函数
+  StrBlob(std::initializer_list<std::string> il)
+    : data(std::shared_ptr<std::vector<std::string>>(il)) {}
+
+private:
+  std::shared_ptr<std::vector<std::string>> data;
+}
+
+// 使用一个初始值列表初始化 StrBlob 对象
+StrBlob b1{"hello", "a", "an"};
+// or
+StrBlob b2({"hello", "a", "an"});
+// or
+StrBlob b3 = {"hello", "a", "an"}; 
+// 若构造函数为 explicit，则不可拷贝初始化，只能直接初始化
+// error: chosen constructor is explicit in copy-initialization
 ```
 
 #### 省略符形参
