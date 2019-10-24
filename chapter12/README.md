@@ -3,6 +3,7 @@
 - [第十二章 动态内存](#第十二章-动态内存)
     - [12.1 动态内存与智能指针](#121-动态内存与智能指针)
         - [12.1.1 shared_ptr 类](#1211-shared_ptr-类)
+            - [初始化方式：](#初始化方式)
             - [shared_ptr 和 unique_ptr 都支持的操作](#shared_ptr-和-unique_ptr-都支持的操作)
             - [shared_ptr 独有的操作](#shared_ptr-独有的操作)
             - [make_shared 函数](#make_shared-函数)
@@ -21,6 +22,10 @@
             - [释放动态内存](#释放动态内存)
             - [内置指针管理的动态对象，生存期直到被释放](#内置指针管理的动态对象生存期直到被释放)
             - [delete 之后重置指针的值](#delete-之后重置指针的值)
+        - [12.1.3 shared_ptr 和 new 配合使用](#1213-shared_ptr-和-new-配合使用)
+            - [定义和改变 shared_ptr 的方法](#定义和改变-shared_ptr-的方法)
+            - [智能指针的 get() 方法](#智能指针的-get-方法)
+            - [reset() 和 unique() 方法](#reset-和-unique-方法)
 
 <!-- /TOC -->
 
@@ -81,9 +86,26 @@ shared_ptr<int> p1;
 shared_ptr<vector<int>> p2;
 ```
 
-初始化方式：
+#### 初始化方式：
 
-remain
+1. 不初始化，默认为空指针
+
+```cpp
+shared_ptr<int> p1;
+```
+
+2. 使用 `std::make_shared` 函数
+
+```cpp
+shared_ptr<string> s1 = make_shared<string>("hello"); // s1 指向一个 string 对象，值为"hello"
+shared_ptr<int> s2 = make_shared<int>();  // 值初始化的 string，默认值为 0
+```
+
+3. 直接初始化（使用 new 返回的指针初始化智能指针）
+
+```cpp
+shared_ptr<int> pi(new int(42));
+```
 
 
 #### shared_ptr 和 unique_ptr 都支持的操作
@@ -379,5 +401,116 @@ delete p;        // 此时 p 和 q 都变得无效
 p = nullptr;     // p 不再绑定到任何对象，该修改对 q 无效
 ```
 
+### 12.1.3 shared_ptr 和 new 配合使用
 
+如果我们不初始化一个智能指针，那么就会被初始化成空指针。
 
+可以用 new 返回的指针来初始化智能指针。
+
+```cpp
+shared_ptr<double> p1;
+shared_ptr<int> p2(new int(42));
+```
+
+- 接受指针的智能指针构造函数是 `explicit` 的，所以不能将一个内置指针隐式转换为一个智能指针，必须使用直接初始化的方式。
+
+```cpp
+shared_ptr<int> p1 = new int(1024);  // error，构造函数是 explicit 的
+```
+
+如上所示，右侧是一个内置指针，左侧是智能指针类型，不能转换。必须使用直接初始化方式：
+
+```cpp
+shared_ptr<int> p2(new int(1024));
+```
+
+#### 定义和改变 shared_ptr 的方法
+
+- `shared_ptr<T> p(q)`：p 管理 **内置指针q** 所指向的对象；
+
+- `shared_ptr<T> p(u)`：p 从 `unique_ptr u` 那里接管了对象的所有权；将 u 置空。
+
+- `shared_ptr<T> p(q, d)`：p 接管了 **内置指针 q** 所指对象的所有权。q 必须能够转换成 `T*` 类型；p 使用可调用对象 d 来代替 `delete`。
+
+- `shared_ptr<T> p(p2, d)`：p 是 **shared_ptr p2** 的拷贝；p 用可调用对象 d 来代替 `delete`。
+
+- `p.reset()`：若 p 是唯一指向其对象的 `shared_ptr`，`reset` 方法会释放此对象。
+
+- `p.reset(q)`：参数 q 是内置指针，将 p 指向 q。否则置为空。
+
+- `p.reset(q, d)`：同上，但是调用 d 而不是 `delete` 来释放 q。
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g898cz3pfnj20qh07e0v4.jpg)
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g898d99b8cj20qh05tabw.jpg)
+
+#### 智能指针的 get() 方法
+
+智能指针类型定义了一个名为 get 的函数，返回一个内置指针，指向智能指针管理的对象。
+
+此函数的目的是为了：向不能使用智能指针的代码传递一个内置指针。且使用 `get()` 返回的指针的代码不能 `delete` 该指针。
+
+- 将一个智能指针绑定到 `get()` 返回的指针上是错误的：
+
+```cpp
+shared_ptr<int> p(new int(42)); // p 的引用计数为 1
+int *q = p.get();               // 使用 get() 函数返回一个内置指针；不可以对 q 使用 delete
+{
+    shared_ptr<int> ptr(q);
+} // 程序块结束，q 被销毁
+int foo = *p;    // p 指向的内存已经被释放了
+```
+
+- `get()` 用来将指针的访问权限传递给代码，在确定代码不会 `delete` 指针的情况下使用 get。
+
+```cpp
+int main()
+{
+    auto sp = make_shared<int>(20);
+    auto p = sp.get();
+    delete p;
+    
+    // double free or corruption (out)
+    // Aborted (core dumped)
+    // 程序块结束之后，仍然会释放 sp -> double free
+
+    return 0;
+}
+```
+
+- 不要用 get 初始化另一个智能指针或者为另一个智能指针赋值。
+
+#### reset() 和 unique() 方法
+
+- 可以用 `reset` 将一个新的指针赋予一个 `shared_ptr`
+
+```cpp
+p = new int(1024);  // error
+p.reset(new int(1024)); // true，p 指向一个新对象
+```
+
+- `reset` 和 `unique` 共用
+
+```cpp
+if (!p.unique()) {
+    p.reset(new string(*p)); // p 不是所指向对象的唯一用户，为其重新分配一个新的拷贝。
+}
+*p *= 2;  // 对 p 进行新的操作而不影响之前指向的对象
+```
+
+例如：
+
+```cpp
+shared_ptr<int> p(new int(42));
+auto q(p);
+
+cout << q.use_count() << endl;  // 2
+cout << *q << endl;             // 42
+
+if (!q.unique()) {
+    q.reset(new int(*q));
+}
+
+cout << q.use_count() << endl; // 1
+cout << p.use_count() << endl; // 1
+```

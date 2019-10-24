@@ -42,7 +42,8 @@
 - [使用 cout 输出 float, double 指定的精度](#使用-cout-输出-float-double-指定的精度)
 - [sizeof 求数组大小](#sizeof-求数组大小)
 - [remove_if + erase 删除容器中符合要求的元素](#remove_if--erase-删除容器中符合要求的元素)
-- [动态分配对象初始化](#动态分配对象初始化)
+- [动态分配对象初始化（`new`）](#动态分配对象初始化new)
+- [shared_ptr 初始化方式](#shared_ptr-初始化方式)
 
 <!-- /TOC -->
 --------------------------------
@@ -382,7 +383,98 @@ word.erase(remove_if(word.begin(), word.end(),
 
 上述删除了 `word` 这个字符串中的标点符号。
 
-## 动态分配对象初始化
+## 动态分配对象初始化（`new`）
 
 >chapter 12.1.2 直接管理内存
 
+几种方式：
+
+默认初始化，直接初始化方式（直接构造，列表初始化），值初始化
+
+- 默认初始化
+
+`new` 无法为其分配的对象命名，而是返回一个指向该对象的指针。
+
+`int *pi = new int;`
+
+默认情况下，动态分配的对象是 **默认初始化** 的，即：
+
+- 内置类型或者组合类型的对象的值是未定义的； `int *pi = new int;` pi指向未初始化的 int
+
+- 类类型的对象将用默认构造函数进行初始化； `string *ps = new string;` 初始化为空 string
+
+- 直接初始化方式（构造，列表初始化）
+
+- 传统的构造方式：
+
+```cpp
+int *pi = new int(1024); // 传统的构造方式
+string *ps = new string(10, '9');
+```
+
+- 列表初始化方式：
+
+```cpp
+vector<int> *pv = new vector<int>{0, 1, 2, 3, 4, 5, 6};
+```
+
+- 值初始化
+
+在类型名之后跟一对括号，即对动态分配的对象值初始化：
+
+```cpp
+string *ps1 = new string;  // 默认初始化
+string *ps2 = new string();// 值初始化为空 string
+
+int *pi1 = new int;        // 默认初始化，*pi1未定义
+int *pi2 = new int();      // 值初始化，*pi2 = 0
+```
+
+- 对于定义了自己构造函数的类类型来说(string)，值初始化没有意义：对象都会通过默认构造函数来初始化。
+
+- 对于内置类型：值初始化的内置类型对象有着良好定义的值，默认初始化对象的值是未定义的。
+
+使用括号包围的 **初始化器**：
+
+若提供了一个括号包围的初始化器，就可以使用 auto 来推断我们想要分配对象的类型。
+
+当括号中仅有单一初始化器时才可以使用 auto。
+
+```cpp
+auto p1 = new auto(obj);  // p 指向一个与 obj 类型相同的对象
+
+auto p2 = new auto{a, b, c}; // error，括号中只能有单一初始化器
+```
+
+## shared_ptr 初始化方式
+
+>chapter 12.1.1 shared_ptr 类 / 12.1.3 shared_ptr 和 new 结合使用
+
+1. 不初始化，默认为空指针
+
+```cpp
+shared_ptr<int> p1;
+```
+
+2. 使用 `std::make_shared` 函数
+
+```cpp
+shared_ptr<string> s1 = make_shared<string>("hello"); // s1 指向一个 string 对象，值为"hello"
+shared_ptr<int> s2 = make_shared<int>();  // 值初始化的 string，默认值为 0
+```
+
+3. 直接初始化（使用 new 返回的指针初始化智能指针）
+
+```cpp
+shared_ptr<int> pi(new int(42));
+```
+
+4. 此外：
+
+- `shared_ptr<T> p(q)`：p 管理 **内置指针q** 所指向的对象；
+
+- `shared_ptr<T> p(u)`：p 从 `unique_ptr u` 那里接管了对象的所有权；将 u 置空。
+
+- `shared_ptr<T> p(q, d)`：p 接管了 **内置指针 q** 所指对象的所有权。q 必须能够转换成 `T*` 类型；p 使用可调用对象 d 来代替 `delete`。
+
+- `shared_ptr<T> p(p2, d)`：p 是 **shared_ptr p2** 的拷贝；p 用可调用对象 d 来代替 `delete`。
