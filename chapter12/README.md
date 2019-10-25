@@ -26,6 +26,10 @@
             - [定义和改变 shared_ptr 的方法](#定义和改变-shared_ptr-的方法)
             - [智能指针的 get() 方法](#智能指针的-get-方法)
             - [reset() 和 unique() 方法](#reset-和-unique-方法)
+        - [12.1.4 智能指针和异常](#1214-智能指针和异常)
+            - [智能指针和哑类](#智能指针和哑类)
+            - [使用自己的释放操作](#使用自己的释放操作)
+            - [使用智能指针的基本规范](#使用智能指针的基本规范)
 
 <!-- /TOC -->
 
@@ -514,3 +518,105 @@ if (!q.unique()) {
 cout << q.use_count() << endl; // 1
 cout << p.use_count() << endl; // 1
 ```
+
+### 12.1.4 智能指针和异常
+
+使用智能指针，即使程序块过早的结束（发生了异常），智能指针类也能确保在内存不再需要时将其释放：
+
+```cpp
+void f()
+{
+    shared_ptr<int> sp(new int(10));
+    // 抛出异常，且没有在 f 中捕获
+} // 函数结束时，shared_ptr 仍能自动释放内存
+```
+
+而直接管理的内存当发生异常时，管理的内存不会释放。
+
+#### 智能指针和哑类
+
+- 包括所有标准库类在内的C++类都定义了析构函数，负责清理对象使用的资源
+
+- 有些类要求用户显式地释放所使用的资源
+
+例如对于一个网络编程：
+
+```cpp
+struct destination;
+struct connection;
+connection connect(destination*);   // 建立连接
+void disconnect(connect);           // 关闭指定的连接
+
+void f(destination &d)
+{
+    connection c = connect(&d); // 建立一个连接
+
+    // 使用连接，结束时没有关闭连接
+}
+```
+
+如果 `connection` 类有一个析构函数，就可以在函数结束时，由析构函数自动关闭连接。若没有析构函数，就会发生类似内存泄露的事情。
+
+#### 使用自己的释放操作
+
+当一个 shared_ptr 被销毁时，默认地对自己管理的指针进行 delete 操作。
+
+我们可以自定义一个 **删除器(deleter)** 并当作参数传递给 shared_ptr ，完成对 shared_ptr 中保存的指针进行释放。
+
+`void end_connection(connection *p) { disconnect(*p); }`
+
+将删除器 `end_connection` 当作参数传递给 shared_ptr:
+
+```cpp
+void f(destination &d)
+{
+    connection c = connect(&d);
+    shared_ptr<connection> p(&c, end_connection);
+}
+```
+
+当函数 f 推出的时候，p 被销毁，他不会对自己保存的指针执行 `delete`，而是调用 `end_connection`。
+
+#### 使用智能指针的基本规范
+
+- 不使用相同的内置指针值初始化（或者 reset）多个智能指针。
+
+>ref: [知乎：智能指针的陷阱？](!https://www.zhihu.com/question/285728913)
+
+当我们将一个原生指针交给智能指针的时候，这个智能指针被允许认为自己获得了这个原生指针指向资源的独占所有权。即用一个内置指针初始化一个 shared_ptr，会新建一个计数器。
+
+```cpp
+int *p = new int();
+std::shared_ptr<int> sp1(p);        // sp1 认为自己独占了 p 指向的资源
+std::shared_ptr<int> sp2(sp1);      // sp2 与 sp1 共享资源
+std::shared_ptr<int> sp3(p);        // sp3 认为自己独占了 p 指向的资源
+```
+
+如上所示，当作用域结束之后，sp1, sp2, sp3 指向的资源相同。应当只销毁一次。
+
+但是由于 sp3 的存在，该资源会被销毁两次。会产生未定义行为。
+
+- 不 `delete` `get()` 返回的指针
+
+`get()` 是为了向不能使用智能指针的方法传递一个内置指针，不能使用 `delete` 操作
+
+```cpp
+int main()
+{
+    auto sp = make_shared<int>(20);
+    auto p = sp.get();
+    delete p;
+    
+    // double free or corruption (out)
+    // Aborted (core dumped)
+    // 程序块结束之后，仍然会释放 sp -> double free
+
+    return 0;
+}
+```
+
+- 若使用 `get()` 返回的指针，当最后一个对应的智能指针销毁之后，你的指针就变为无效了。
+
+- 如果使用智能指针管理的资源不是 `new` 分配的内存，记住传递给它一个删除器。
+
+智能指针销毁的时候默认调用 `delete` 方法，若不是 `new` 分配的内存，没有对应的 `delete` 方法。
