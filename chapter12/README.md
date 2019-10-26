@@ -3,7 +3,7 @@
 - [第十二章 动态内存](#第十二章-动态内存)
     - [12.1 动态内存与智能指针](#121-动态内存与智能指针)
         - [12.1.1 shared_ptr 类](#1211-shared_ptr-类)
-            - [初始化方式：](#初始化方式)
+            - [初始化方式](#初始化方式)
             - [shared_ptr 和 unique_ptr 都支持的操作](#shared_ptr-和-unique_ptr-都支持的操作)
             - [shared_ptr 独有的操作](#shared_ptr-独有的操作)
             - [make_shared 函数](#make_shared-函数)
@@ -30,6 +30,15 @@
             - [智能指针和哑类](#智能指针和哑类)
             - [使用自己的释放操作](#使用自己的释放操作)
             - [使用智能指针的基本规范](#使用智能指针的基本规范)
+        - [12.1.5 unique_ptr](#1215-unique_ptr)
+            - [unique_ptr 的操作](#unique_ptr-的操作)
+            - [初始化 unique_ptr](#初始化-unique_ptr)
+            - [unique_ptr 不支持拷贝或赋值](#unique_ptr-不支持拷贝或赋值)
+            - [传递 unique_ptr 参数和返回 unique_ptr](#传递-unique_ptr-参数和返回-unique_ptr)
+            - [向 unique_ptr 传递删除器](#向-unique_ptr-传递删除器)
+        - [12.1.6 weak_ptr](#1216-weak_ptr)
+            - [weak_ptr 的操作](#weak_ptr-的操作)
+            - [初始化和访问](#初始化和访问)
 
 <!-- /TOC -->
 
@@ -90,7 +99,7 @@ shared_ptr<int> p1;
 shared_ptr<vector<int>> p2;
 ```
 
-#### 初始化方式：
+#### 初始化方式
 
 1. 不初始化，默认为空指针
 
@@ -620,3 +629,160 @@ int main()
 - 如果使用智能指针管理的资源不是 `new` 分配的内存，记住传递给它一个删除器。
 
 智能指针销毁的时候默认调用 `delete` 方法，若不是 `new` 分配的内存，没有对应的 `delete` 方法。
+
+### 12.1.5 unique_ptr
+
+`unique_ptr` 拥有它所指向的对象，且它只能指向一个给定的对象。所以当 `unique_ptr` 被销毁的时候，它所指向的对象也被销毁。
+
+#### unique_ptr 的操作
+
+操作 | 含义
+--- | ---
+unique_ptr<T> u1 | 空的 uniquel_ptr，使用 delete 来释放指针
+unique_ptr<T, D> u2 | 空的 unique_ptr，使用一个类型为 D 的可调用对象来释放它的指针
+unique_ptr<T, D> u(d) | 空的 unique_ptr，用类型为 D 的对象 d 来代替 delete
+u = nullptr | 释放 u 指向的对象，将 u 置为空
+u.release() | 放弃对指针的控制权，返回指针，将 u 置为空，但是不会释放 u 指向的对象
+u.reset() | 释放 u 指向的对象，将 u 置为空
+u.reset(q) | 释放 u 指向的对象，令 u 指向内置指针 q
+u.reset(nullptr) | 释放 u 指向的对象，置为 nummptr
+
+#### 初始化 unique_ptr
+
+与 `shared_ptr` 不同，没有类似 `make_shared` 的标准库函数返回一个 `unique_ptr`。
+
+- 定义一个 `unique_ptr`，需要将其绑定到一个 `new` 返回的指针上，必须采用直接初始化：
+
+```cpp
+unique_ptr<double> p1; // 指向一个 double 的 unique_ptr
+unique_ptr<int> p2(new int(42)); // 指向一个值为 42 的 int
+```
+
+#### unique_ptr 不支持拷贝或赋值
+
+`unique_ptr`拥有它指向的对象，所以不支持普通的拷贝或者赋值操作。（例外在下一个部分）
+
+可以调用 `release()` 或者 `reset()` 方法将指针的所有权从一个 `unique_ptr` 转移给另一个：
+
+```cpp
+// p1.release() 方法将 p1 置空，返回指向的对象
+unique_ptr<string> p2(p1.release()); 
+
+// p2 释放了自身所指向的对象，并指向参数的返回值
+// 参数为 p3.release()，p3 放弃对指针的控制权，返回指针，并将 p3 置为空
+unique_ptr<string> p3(new string("text"));
+p2.reset(p3.release());
+```
+
+- `release` 返回的指针通常用来初始化另一个智能指针或给另一个智能指针赋值。如果我们不用另一个智能指针来保存 `release` 返回的指针，我们的程序就要负责资源的释放：
+
+```cpp
+auto p = p2.release();
+delete p;
+```
+
+#### 传递 unique_ptr 参数和返回 unique_ptr
+
+不能拷贝 `unique_ptr` 有一个例外，就是我们 **可以拷贝或者赋值一个将要被销毁的 `unique_ptr`**。
+
+- 最常见的例子是从函数返回一个 `unique_ptr`:
+
+```cpp
+unique_ptr<int> clone(int p){
+    return unique_ptr<int>(new int(p));
+}
+```
+
+- 返回一个局部对象的拷贝：
+
+```cpp
+unique_ptr<int> clone(int p) {
+    unique_ptr<int> ret(new int(p));
+
+    return ret;
+}
+```
+
+#### 向 unique_ptr 传递删除器
+
+默认情况下 `unique_ptr` 使用 `delete` 释放它指向的对象。
+
+重载一个 `unique_ptr` 中的删除器会影响到 `unique_ptr` 类型以及如何构造该类型的对象。
+
+必须在尖括号中的指向类型之后提供删除器类型：
+
+```cpp
+unique_ptr<objT, delT> p(new objT, func);
+```
+
+上述定义含义为：
+
+- p 指向一个类型为 objT 的对象，并使用一个类型为 delT 的对象释放 objT 对象；
+
+- 销毁时会调用一个名为 `func` 的 delT 类型对象。
+
+例如：
+
+```cpp
+connection c = connect(&d);
+unique_ptr<connection, decltype(end_connection)*>
+    p(&c, end_connection);
+
+// 当出作用域时，connection 会被正常关闭
+```
+
+### 12.1.6 weak_ptr
+
+`weak_ptr` 是一种不控制所指对象生存期的智能指针，指向由一个 `shared_ptr` 管理的对象。
+
+- 将一个 `weak_ptr` 绑定到一个 `shared_ptr` 不会改变其引用计数。
+
+#### weak_ptr 的操作
+
+操作 | 含义
+--- | ---
+weak_ptr<T> w | 空 weak_ptr
+weak_ptr<T> w(sp) | 该 weak_ptr 指向与 sp 指向对象相同；T必须能够转换为 sp 指向的类型
+w = p | p 可以是一个 shared_ptr 或者 weak_ptr
+w.reset() | 将 w 置空
+w.use_count() | 与 w 共享对象的 shared_ptr 的数量
+w.expired() | 检查此 weak_ptr 是否过期；若 w.use_count() 为 0，返回 true，否则 false
+w.lock() | 若 expired 为 true，返回一个空的 shared_ptr；否则返回一个指向 w 的对象的 shared_ptr
+
+#### 初始化和访问
+
+使用 `shared_ptr` 来初始化一个 `weak_ptr`：
+
+```cpp
+auto p = make_shared<int>(20);
+weak_ptr<int> wp(p);
+```
+
+使用 `weak_ptr` 时，由于对象可能不存在，不能直接访问，需要使用 `w.lock()` 检查对象是否存在：
+
+```cpp
+if (shared_ptr<int> np = wp.lock())
+{
+    // 如果 np 不为空，则进入循环
+    // 循环中可以使用 np 访问共享对象
+}
+```
+
+```cpp
+auto p = make_shared<int>(20);
+weak_ptr<int> wp(p);
+
+if (auto np = wp.lock())
+{
+    cout << np.use_count() << endl; // 2
+    cout << *np << endl;            // 20
+}
+```
+
+#### 检查指针类
+
+为 StrBlob 类定义一个伴随指针类，指针类将命名为 StrBlobPtr，保存一个 weak_ptr，指向 StrBlob 的 data 成员。
+
+```cpp
+
+```

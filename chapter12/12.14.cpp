@@ -41,6 +41,7 @@ void f(destination& d)
     connection c = connect(&d);
     std::shared_ptr<connection> p(&c, end_connection);
     std::cout << "Connection use_count is " << p.use_count() << std::endl;
+
 }
 
 int main()
