@@ -39,6 +39,21 @@
         - [12.1.6 weak_ptr](#1216-weak_ptr)
             - [weak_ptr 的操作](#weak_ptr-的操作)
             - [初始化和访问](#初始化和访问)
+            - [检查指针类](#检查指针类)
+    - [12.2 动态数组](#122-动态数组)
+        - [12.2.1 new 和数组](#1221-new-和数组)
+            - [定义数组](#定义数组)
+            - [初始化动态分配对象的数组](#初始化动态分配对象的数组)
+            - [动态分配一个空数组是合法的](#动态分配一个空数组是合法的)
+            - [释放静态数组](#释放静态数组)
+            - [智能指针和动态数组](#智能指针和动态数组)
+            - [指向数组的 unique_ptr 的操作](#指向数组的-unique_ptr-的操作)
+            - [用 shared_ptr 管理动态数组](#用-shared_ptr-管理动态数组)
+        - [12.2.2 allocator 类](#1222-allocator-类)
+            - [allocator 类](#allocator-类)
+            - [allocator 类的操作](#allocator-类的操作)
+            - [allocator 分配未构造的内存](#allocator-分配未构造的内存)
+            - [拷贝和填充未初始化的内容](#拷贝和填充未初始化的内容)
 
 <!-- /TOC -->
 
@@ -783,6 +798,220 @@ if (auto np = wp.lock())
 
 为 StrBlob 类定义一个伴随指针类，指针类将命名为 StrBlobPtr，保存一个 weak_ptr，指向 StrBlob 的 data 成员。
 
-```cpp
+见练习 12.19 - 12.22
 
+## 12.2 动态数组
+
+C++ 提供了两种一次性分配一个对象数组的方法：
+
+- 使用 `new` 表达式
+
+- 使用标准库的 `allocator` 类，将内存分配和初始化分离
+
+使用容器的类可以使用默认版本的拷贝、赋值、析构操作。分配动态数组的类必须定义自己版本的操作，在拷贝、复制、销毁对象时管理所关联的内存。
+
+### 12.2.1 new 和数组
+
+#### 定义数组
+
+使用 `new` 分配一个数组，需要在类型名之后跟一对方括号，方括号中的大小必须是整形，不必是常量：
+
+```cpp
+int *arr = new int[20];
 ```
+
+或者使用类型别名代表数组类型：
+
+```cpp
+typedef int arr[24];
+// or
+using arr = int[24];
+
+int *p = new arr;
+```
+
+此处 `p`, `arr` 都是数组元素类型的指针。
+
+若 `new` 表达式失败，不会分配任何内存，会抛出一个 `bad_array_new_length` 的异常，定义在头文件 `new` 中。
+
+不能用 `auto` 分配数组。
+
+#### 初始化动态分配对象的数组
+
+- 默认情况下，`new` 分配的对象都是默认初始化：
+
+```cpp
+int *pia = new int[10];    // 10 个未初始化的 int
+int *psa = new string[10]; // 10 个空 string
+```
+
+- 值初始化，在数组大小之后跟一对空括号：
+
+```cpp
+int *pia2 = new int[10]();   // 10 个值初始化为 0 的int
+int *psa2 = new string[10]();// 10 个空 string
+```
+
+- C++11 中的列表初始化
+
+前几个给定的元素使用初始化器初始化，剩余的值初始化
+
+```cpp
+int *pia3 = new int[10]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+string *psa3 = new string[10]{"a", "an", "the", string(3, 'x')};
+```
+
+#### 动态分配一个空数组是合法的
+
+- 不能创建一个大小为 0 的静态数组对象，但当 n 等于 0 时，调用 `new[0]` 是合法的：
+
+用 `new` 分配一个大小为 0 的数组时，`new` 返回一个合法的非空指针：
+
+- 可以像使用尾后迭代器一样使用这个指针
+
+- 可以用指针进行比较操作
+
+- 可以向此指针加上 0，或者从此指针减去自身从而得到 0.
+
+- 不能对指针解引用，因为不指向任何元素。
+
+```cpp
+size_t n = get_size();
+int *p = new int[n];
+for (int *q = p; q != p+n; ++q)
+{
+    // ...
+}
+```
+
+如上所示，若 `get_size()` 返回0，循环体不会执行。
+
+#### 释放静态数组
+
+为了释放静态数组，我们使用一种特殊形式的 `delete`——在指针前加上一个空方括号对：
+
+```cpp
+delete p;    // p 指向一个动态分配的对象或为空
+delete [] p; // p 指向一个动态分配的数组或为空
+```
+
+其中，数组中的元素按照 **逆序销毁**。
+
+若：
+
+1. `delete` 一个指向数组的指针时忽略了方括号；
+
+2. `delete` 一个指向单一对象的指针时使用了方括号：
+
+则行为是未定义的。（编译器可能不会给出警告）
+
+#### 智能指针和动态数组
+
+可以用一个 `unique_ptr` 管理动态数组：
+
+```cpp
+unique_ptr<int[]> up(new int[10]);
+up.release();  // 自动调用 delete[] 销毁其指针
+```
+
+当 up 销毁它管理的指针时，会自动使用 `delete[]` 。指向普通对象的 `release()` 操作不会归还对应的内存。
+
+- unique_ptr 指向一个数组时，不能使用点和箭头运算符。因为指向的是数组而不是单个对象
+
+- 可以使用下标运算符来访问数组中的元素 ： `auto i = up[1];`
+
+#### 指向数组的 unique_ptr 的操作
+
+指向数组的 unique_ptr 不支持成员访问运算符（点和箭头），其他 unique_ptr 的操作不变。
+
+操作 | 含义
+--- | ---
+unique_ptr<T[]> u | u 指向一个可以动态分配的数组
+unique_ptr<T[]> u(p) | u 指向内置指针 p 所指向的动态分配的数组。p 必须能够转换为类型 T*
+u[i] | 下标访问对象
+
+#### 用 shared_ptr 管理动态数组
+
+shared_ptr 不直接支持管理动态数组，若要使用 shared_ptr，必须提供自己定义的删除器：
+
+```cpp
+shared_ptr<int> sp(new int[10], [](int *p) { delete[] p;});
+sp.reset();  // 若 sp 是唯一的指向该内存的 shared_ptr ，则释放这块内存
+```
+
+若未提供删除器，则 shared_ptr 使用 delete 方法销毁它指向的对象，行为是未定义的。
+
+shared_ptr 不支持下标运算符，也不支持指针的算术运算，访问数组的方法：
+
+```cpp
+for (size_t i = 0; i != 10; ++i)
+{
+    *(sp.get() + i) = i;
+}
+```
+
+需要用 `get()` 方法获取内置指针。
+
+### 12.2.2 allocator 类
+
+- `new` 方法将内存分配和对象构造组合在了一起。`delete` 方法将对象析构和内存释放组合在一起。
+
+- 标准库 `allocator类` 定义在头文件 `memory` 中，它帮助我们将内存分配和对象构造分离开来。
+
+#### allocator 类
+
+allocator 是一个模板，必须知名这个 allocator 可以分配的对象类型：
+
+```cpp
+allocator<string> alloc;
+auto const p = alloc.cllocate(n);  // 分配 n 个未初始化的 string
+```
+
+#### allocator 类的操作
+
+操作 | 含义
+--- | ---
+allocator<T> a | 定义一个名为 a 的 allocator 对象，可以为类型为 T 的对象分配内存
+a.allocate(n) | 分配一段为构造的内存，保存 n 个 T 对象
+a.deallocate(p, n) | 释放从 p 中地址开始的内存，这块内存保存了 n 个类型为 T 的对象；p 是由 allocate 返回的指针，且 n 必须是 p 创建时候的大小；调用 deallocate 之前，必须对内存中创建的对象调用 destroy
+a.construct(p, args) | p 指向一块原始内存：arg 被传递给类型为 T 的构造函数，用来在 p 指向的内存中构造一块对象
+a.destroy(p) | 对 p 指向的对象执行析构函数
+
+#### allocator 分配未构造的内存
+
+```cpp
+auto q = p;  // q 指向最后的构造的元素之后的位置
+alloc.construct(q++);  // *q 为空字符串
+alloc.construct(q++, 10, 'c');  // *q 为 cccccccccc
+alloc.construct(q++, "hi");     // *q 为 hi
+```
+
+- 为了使用 `allocate` 返回的内存，必须用 `construct` 构造对象。使用未构造的内存，行为是未定义的。
+
+当使用完对象后，必须对每个构造的元素调用 `destroy` 来销毁他们：
+
+```cpp
+while (q != p)
+    alloc.destroy(--q);
+```
+
+销毁元素之后才可以释放内存：
+
+```cpp
+alloc.deallocate(p, n);
+```
+
+#### 拷贝和填充未初始化的内容
+
+标准库为 `allocator` 定义了两个伴随算法，都定义在 memory 中，用来在未初始化内存中创建对象：
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8c21f8u24j20p40botc8.jpg)
+
+例如，将一个 vector<int> 的内容拷贝到两倍大小的动态内存中，后半部分使用某个元素填充：
+
+```cpp
+auto p = alloc.allocate(vec.size() * 2);
+auto q = uninitialized_copy(vec.cbegin(), vec.cend(), p); // 返回填充元素之后一个元素的位置
+uninitialized_fill_n(q, vec.size(), 20)；  // 后半部分使用 20 填充
+```
+

@@ -478,3 +478,11 @@ shared_ptr<int> pi(new int(42));
 - `shared_ptr<T> p(q, d)`：p 接管了 **内置指针 q** 所指对象的所有权。q 必须能够转换成 `T*` 类型；p 使用可调用对象 d 来代替 `delete`。
 
 - `shared_ptr<T> p(p2, d)`：p 是 **shared_ptr p2** 的拷贝；p 用可调用对象 d 来代替 `delete`。
+
+## `new` 和 `delete` 方法
+
+>chapter 12.2.2 allocator 类
+
+- `new` 方法将 **内存分配** 和 **对象构造** 组合在了一起。
+
+- `delete` 方法将 **对象析构** 和 **内存释放** 组合在一起。
