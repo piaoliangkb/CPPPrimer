@@ -54,6 +54,7 @@
             - [allocator 类的操作](#allocator-类的操作)
             - [allocator 分配未构造的内存](#allocator-分配未构造的内存)
             - [拷贝和填充未初始化的内容](#拷贝和填充未初始化的内容)
+            - [练习 12.26：使用 allocator](#练习-1226使用-allocator)
 
 <!-- /TOC -->
 
@@ -1015,3 +1016,36 @@ auto q = uninitialized_copy(vec.cbegin(), vec.cend(), p); // 返回填充元素�
 uninitialized_fill_n(q, vec.size(), 20)；  // 后半部分使用 20 填充
 ```
 
+#### 练习 12.26：使用 allocator
+
+```cpp
+int main()
+{
+    allocator<string> alloc;
+    string s;
+    int n;
+
+    cout << "allocate size : ";
+    cin >> n;
+    
+    auto const p = alloc.allocate(n);
+    auto q = p; 
+    
+    while (cin >> s && q != p + n)
+    {
+        alloc.construct(q++, s);
+    }
+
+    cout << "initial pointer points to : " << *p << endl;
+
+    while (q != p)
+    {
+        cout << *(--q) << endl;
+        alloc.destroy(q);
+    }
+
+    alloc.deallocate(p, n);
+
+    return 0;
+}
+```
