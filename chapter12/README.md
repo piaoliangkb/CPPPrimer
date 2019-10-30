@@ -57,6 +57,9 @@
             - [练习 12.26：使用 allocator](#练习-1226使用-allocator)
     - [12.3 文本查询程序](#123-文本查询程序)
         - [12.3.1 文本查询程序设计](#1231-文本查询程序设计)
+            - [数据结构](#数据结构)
+            - [类之间共享数据](#类之间共享数据)
+            - [使用 TexyQuery 类](#使用-texyquery-类)
 
 <!-- /TOC -->
 
@@ -1103,3 +1106,7 @@ void runQueries(ifstream &infile)
     }
 }
 ```
+
+#### 问题遗留
+
+见 https://github.com/piaoliangkb/cppprimer/tree/master/some_tips#shared_ptr-%E7%9A%84%E5%BC%95%E7%94%A8%E5%92%8C%E6%8B%B7%E8%B4%9D%E9%97%AE%E9%A2%98%E9%81%97%E7%95%99
