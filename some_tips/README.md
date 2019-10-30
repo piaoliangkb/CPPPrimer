@@ -46,6 +46,7 @@
 - [动态分配对象初始化（`new`）](#动态分配对象初始化new)
 - [shared_ptr 初始化方式](#shared_ptr-初始化方式)
 - [`new` 和 `delete` 方法](#new-和-delete-方法)
+- [shared_ptr 的引用和拷贝(问题遗留)](#shared_ptr-的引用和拷贝问题遗留)
 
 <!-- /TOC -->
 --------------------------------
@@ -502,3 +503,60 @@ shared_ptr<int> pi(new int(42));
 - `new` 方法将 **内存分配** 和 **对象构造** 组合在了一起。
 
 - `delete` 方法将 **对象析构** 和 **内存释放** 组合在一起。
+
+## shared_ptr 的引用和拷贝(问题遗留)
+
+>12.3.2 文本查询程序类的定义
+
+下边一段代码：
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8gijp1etyj20op0h4tcd.jpg)
+
+其中 wm 的定义为：
+
+```cpp
+map<string, shared_ptr<set<int>>> wm;
+```
+
+即：wm 的 value 是一个 shared_ptr。
+
+在途中获取某个 lines 使用了&，表示 lines 是一个 shared_ptr 的引用。当修改 lines 的时候，修改了原数据。
+
+疑惑1：由于 shared_ptr 本身就是一个指针，若不加 & 号，获取的 lines 与获取的引用有何不同？
+
+- 在 map 的 value 中获取 shared_ptr 的直接拷贝：
+
+```cpp
+map<string, shared_ptr<set<int>>> mp;
+
+auto res = mp["hello"];
+
+cout << res.use_count() << endl; // 0
+
+res.reset(new set<int>);
+
+cout << res.use_count() << endl; // 1
+
+cout << mp["hello"].use_count() << endl; // 0
+```
+
+如上所示，在一个 scope 中，未初始化的 shared_ptr 直接拷贝给 res 之后 res 引用计数为0。res 初始化之后引用计数为1。但是未对原始 shared_ptr 进行初始化。
+
+- 在 map 的 value 中获取 shared_ptr 的引用：
+
+```cpp
+map<string, shared_ptr<set<int>>> mp;
+
+auto &res = mp["hello"]; // 0
+
+cout << res.use_count() << endl; // 1
+
+res.reset(new set<int>);
+
+cout << res.use_count() << endl; // 1
+cout << mp["hello"].use_count() << endl; // 1
+```
+
+获取引用相当于直接对原值进行操作，所以初始化 shared_ptr 之后所有的引用计数都变为1.
+
+疑惑2：map的下标获取值的方法？拷贝？若 value 为 shared_ptr，如何拷贝？
