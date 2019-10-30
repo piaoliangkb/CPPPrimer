@@ -55,6 +55,8 @@
             - [allocator 分配未构造的内存](#allocator-分配未构造的内存)
             - [拷贝和填充未初始化的内容](#拷贝和填充未初始化的内容)
             - [练习 12.26：使用 allocator](#练习-1226使用-allocator)
+    - [12.3 文本查询程序](#123-文本查询程序)
+        - [12.3.1 文本查询程序设计](#1231-文本查询程序设计)
 
 <!-- /TOC -->
 
@@ -1047,5 +1049,57 @@ int main()
     alloc.deallocate(p, n);
 
     return 0;
+}
+```
+
+## 12.3 文本查询程序
+
+我们需求是做一个单词查找程序：
+
+1. 在一个给定文件中查询单词
+
+2. 查询结果为单词在文件中出现的次数，以及所在行的列表
+
+3. 结果按照行数升序打印，打印行号和当前行的内容。
+
+### 12.3.1 文本查询程序设计
+
+1. 程序读取文件到一个 vector<string>，文件中的每行保存为 vector 中的一个元素。
+
+2. 使用 istringstream 处理每一行的单词
+
+3. 使用 set 保存单词在文本中出现在哪一行，set 保证有序
+
+4. 使用 map 将一个单词和保存它出现位置的行号 set 关联起来
+
+#### 数据结构
+
+定义一个保存输入文件的类：`TextQuery`
+
+其中包含 `vector` 和 `map`
+
+定义一个查询结果的类： `QueryResult`
+
+#### 类之间共享数据
+
+我们使用 `QueryResult` 类表达查询的结果：包含出现行号的 set 和 这些行对应的文本。
+
+`QueryResult` 和 `TextQuery` 类共享了数据，可以使用 `shared_ptr`。
+
+#### 使用 TexyQuery 类
+
+我们假定查询函数编写为如下形式，则可以大概了解我们的类需要的操作：
+
+```cpp
+void runQueries(ifstream &infile)
+{
+    TextQuery tq(infile);
+
+    while (true) {
+        cout << "Please enter word you want to search: ";
+        string s;
+        cin >> s;
+        print(cout, tq.query(s)) << endl;
+    }
 }
 ```

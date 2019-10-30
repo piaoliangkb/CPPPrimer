@@ -42,8 +42,10 @@
 - [使用 cout 输出 float, double 指定的精度](#使用-cout-输出-float-double-指定的精度)
 - [sizeof 求数组大小](#sizeof-求数组大小)
 - [remove_if + erase 删除容器中符合要求的元素](#remove_if--erase-删除容器中符合要求的元素)
+- [transform 将 string 中的大写转为小写](#transform-将-string-中的大写转为小写)
 - [动态分配对象初始化（`new`）](#动态分配对象初始化new)
 - [shared_ptr 初始化方式](#shared_ptr-初始化方式)
+- [`new` 和 `delete` 方法](#new-和-delete-方法)
 
 <!-- /TOC -->
 --------------------------------
@@ -382,6 +384,20 @@ word.erase(remove_if(word.begin(), word.end(),
 ```
 
 上述删除了 `word` 这个字符串中的标点符号。
+
+## transform 将 string 中的大写转为小写
+
+>ex12.7
+
+>ref: https://zh.cppreference.com/w/cpp/algorithm/transform
+
+```cpp
+string word("Hello, From, The,  World!");
+transform(word.begin(), word.end(), word.begin(),
+                       [](char c) { return tolower(c); });
+```
+
+其中，第三个参数是目标范围的起始。可以等于第一个参数。
 
 ## 动态分配对象初始化（`new`）
 
