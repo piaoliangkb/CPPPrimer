@@ -1,6 +1,8 @@
 #include <string>
 #include <iostream>
 
+// 类值版本的 HasPtr
+
 class HasPtr {
 public:
     HasPtr(const std::string& s = std::string()) : ps(new std::string(s)), i(0) {}

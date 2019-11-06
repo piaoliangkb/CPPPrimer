@@ -37,6 +37,17 @@
         - [13.2.2 定义行为像指针的类](#1322-定义行为像指针的类)
             - [引用计数](#引用计数)
             - [定义一个引用计数的 HasPtr 类](#定义一个引用计数的-hasptr-类)
+    - [13.3 交换操作](#133-交换操作)
+        - [编写我们自己的 swap 函数](#编写我们自己的-swap-函数)
+        - [swap 函数应该调用 swap，而不是 std::swap](#swap-函数应该调用-swap而不是-stdswap)
+        - [赋值运算符中使用 swap](#赋值运算符中使用-swap)
+    - [13.4 拷贝控制实例](#134-拷贝控制实例)
+        - [Message 类](#message-类)
+        - [save 和 remove 成员](#save-和-remove-成员)
+        - [Message 类的拷贝控制成员](#message-类的拷贝控制成员)
+        - [Message 的析构函数](#message-的析构函数)
+        - [Message 的拷贝赋值运算符](#message-的拷贝赋值运算符)
+        - [Message 的 swap 函数](#message-的-swap-函数)
 
 <!-- /TOC -->
 
@@ -716,3 +727,232 @@ private:
 ```
 
 其中参数 `std::size_t *use` 记录多少个对象共享相同的 string。
+
+## 13.3 交换操作
+
+与重排元素顺序的算法一起使用的类，定义 swap 很重要，这类算法在需要交换两个元素的时候会调用 swap。
+
+如果一个类定义了自己的 swap，那么算法将使用类自定义版本，否则，算法将使用标准库定义的 swap。
+
+### 编写我们自己的 swap 函数
+
+可以在我们的类上定义一个自己版本的 swap 来重载 swap 的默认行为，swap 的典型实现如下：
+
+```cpp
+class HasPtr {
+    friend void swap(HasPtr&, HasPtr&);
+
+private:
+    std::string *ps;
+    int i;
+};
+
+inline void swap(HasPtr& lhs, HasPtr& rhs)
+{
+    using std::swap;
+    swap(lhs.ps, rhs.ps); // 交换指针，而不是 string
+    swap(lhs.i, rhs.i);   // 交换 int
+}
+```
+
+### swap 函数应该调用 swap，而不是 std::swap
+
+在本例中，数据成员是内置类型的，内置类型没有特定版本的 swap，所以会调用标准库 std::swap.
+
+若一个类的成员有自己类型特定的 swap 函数，那么调用 std::swap 就是错误的。
+
+例如有一个类 `Foo`，有一个类型为 `HasPtr` 的成员 h。如果未定义 Foo 版本的 swap，那么就会使用标准库版本的 swap。标准库版本的 swap 会对 HasPtr 管理的 string 进行不必要的拷贝。
+
+此时，正确的 swap 函数为：
+
+```
+void swap(Foo &lhs, Foo &rhs)
+{
+    using std::swap;
+    swap(lhs.h, rhs.h); // 使用 HasPtr 版本的 swap
+}
+```
+
+上述代码的行为可以解释为：如果存在类型特定的 swap 版本，其匹配优先程度会优于 std 中定义的版本（假定作用域中有 using 声明）。（chapter18.2.3 详细解释）
+
+### 赋值运算符中使用 swap
+
+定义了 swap 的类通常用 swap 来定义它们的赋值运算符。使用了一种被称为 **拷贝并交换(copy and swap)** 的技术，将左侧运算对象与右侧运算对象的一个副本进行交换。当赋值运算符结束时，这个副本被销毁。
+
+```cpp
+// 注意这里的右侧运算对象是值传递的，而不是传递引用
+HasPtr& HasPtr::operator=(HasPtr rhs)
+{
+    swap(*this, rhs); // 交换左侧运算对象和局部变量 rhs 的内容，rhs 现在指向本对象曾经使用的内存
+    return *this;
+} // rhs 被销毁，HasPtr 的析构函数执行，delete 掉 rhs 现在指向的内存
+```
+
+这个赋值运算符自动处理了自赋值情况，且天然是异常安全的。它通过改变左侧运算对象之前拷贝右侧运算对象保证了自赋值的正确。
+
+## 13.4 拷贝控制实例
+
+设计两个类，名为 Message 和 Folder，分别表示电子邮件的消息和消息目录。
+
+- 每个 Message 可以出现在多个 Folder 中，但是任意 Message 的内容只有一个副本。用一个包含 Folder* 的 set 来记录 Message 都出现在了哪些 Folder 中。
+
+- 每个 Folder 都保存一个包含 Message* 的 set 来记录都有哪些 Message 出现在这个 Folder 中。
+
+- Message 类提供 save 和 remove 操作向给定的 Folder 添加或删除 Message。
+
+- 拷贝 Message 的时候，副本和原对象是不同的 Message 对象，但是两个 Message 都出现在相同的 Folder 中。需要拷贝 Message 的消息内容，以及出现的 Folder 的指针(set<Folder*>)。在包含此 Message 的 Folder 中也需要添加一个指针指向新创建的 Message。
+
+- 销毁 Message 的时候，包含 Message 的 Folder 的对应指针也应该删除。
+
+- 将一个 Message 对象赋予另一个 Message 对象的时候，需要更新 Folder 集合。指向左侧对象的指针从对应 Folder 删除，并添加到包含右侧 Message 的 Folder 中。
+
+### Message 类
+
+```cpp
+class Folder;
+
+class Message {
+    friend class Folder;
+public:
+    explicit Message(const std::string &s = std::string())
+        : contents(s) {}
+
+    Message(const Message&);
+    Message& operator=(const Message&);
+    ~Message();
+
+    // 从给定 Folder 集合中添加/删除本 Message
+    void save(Folder&);
+    void remove(Folder&);
+    
+private:
+    std::string contents;
+    std::set<Folder*> folders;
+
+    // 拷贝构造函数，拷贝赋值运算符使用的工具函数
+    void add_to_folders(const Message&);
+
+    // 从当前类的 folders 中的每个 Folder 删除当前 Message
+    void remove_fron_folders();
+};
+```
+
+### save 和 remove 成员
+
+Message 的两个 public 成员：save 和 remove
+
+- save：将本 Message 存放在给定的 Folder 中：
+
+```cpp
+void Message::save(Folder &f)
+{
+    folders.insert(&f); // message.folders 添加对应 folder
+    f.addMsg(this);     // 对应 folder 添加本 message
+}
+```
+
+- remove：从给定 Folder 删除本 Message：
+
+```cpp
+void Message::remove(Folder &f)
+{
+    folders.erase(&f);  // message.folders 删除指定 folder
+    f.remMsg(this);     // 指定 folder 删除本 message
+}
+```
+
+### Message 类的拷贝控制成员
+
+当拷贝一个 Message 的时候，得到的副本应该与原副本出现在相同的 Folder 中。
+
+所以需要遍历被拷贝 Message 的 folders 成员，将其中所有的 Folder 都添加指向新的 Message 的指针：
+
+```cpp
+// m 是被拷贝的 Message
+// 将当前 message 添加到所有包含被拷贝元素的 folders 中去
+void Message::add_to_folders(const Message& m)
+{
+    for (auto f: m.folders)
+        f->addMsg(this);
+}
+```
+
+Message 的拷贝构造函数如下：
+
+```cpp
+Message::Message(const Message& m)
+    : contents(m.contents), folders(m.folders)
+{
+    add_to_folders(m);
+}
+```
+
+### Message 的析构函数
+
+当一个 Message 被销毁的时候，必须从指向此 Message  的 Folder 中删除它。拷贝赋值运算符也要执行此操作：
+
+```cpp
+// 从当前所有包含该对象的 Folder 中移除该对象
+// 为析构函数和复制构造运算符的左侧运算对象准备
+void Message::remove_from_folders()
+{
+    for (auto f : folders)
+        f->remMsg(this);
+}
+```
+
+所以析构函数可以编写为：
+
+```cpp
+Message::~Message()
+{
+    remove_from_folders();
+}
+```
+
+### Message 的拷贝赋值运算符
+
+为了处理自赋值情况，先从左侧对象的 folders 中删除此 Message 的指针，然后将指针添加到右侧运算对象的 folders 中.
+
+若先添加左侧对象的 Message 指针到右侧对象的 folers 中(`add_to_folders(rhs) 实现`)，然后再删除。在自赋值的情况下，由于 folders 为 set，所以会将此 Message 从所有包含它的 folder 中删除。
+
+```cpp
+Message& Message::operator=(const Message &rhs)
+{
+    remove_from_Folders();
+    contents = rhs.contents;
+    folders = rhs.contents;
+    add_to_Folders(rhs);
+    return *this;
+}
+```
+
+### Message 的 swap 函数
+
+通过定义 Message 特定版本的 swap，我们可以避免对 contents 和 folders 成员进行不必要的拷贝。
+
+由于 Folder 保存的是 Message 的地址，若只交换 folders 和 contents 成员，Message 的地址不变，Folder 中保存的地址就会有误。
+
+所以先从 Folder 中删除对应的 Message，交换完成之后，重新添加对应的 Message 的地址。
+
+```cpp
+void swap(Message &lhs, Message &rhs)
+{
+    using std::swap;
+
+    // 将每个指针从原来的 Folder 中删除
+    for (auto f : lhs.folders) // 左侧 Message 的所有 Folder 移除左侧 Message
+        f->remMsg(&lhs);
+    for (auto f : rhs.folders) // 右侧 Message 的所有 Folder 移除右侧 Message
+        f->remMsg(&rhs);
+    
+    swap(lhs.folders, rhs.folders);
+    swap(lhs.contents, rhs.contents);
+
+    // 将新的指针添加到 Folder 中
+    for (auto f : lhs.folders)
+        f->addMsg(&lhs);
+    for (auto f : rhs.folders)
+        f->addMsg(&rhs);
+}
+```

@@ -1,6 +1,8 @@
 #include <string>
 #include <iostream>
 
+// 类指针版本的 HasPtr
+
 class HasPtr {
 public:
     HasPtr(const std::string &s = std::string(), const std::string& s1 = std::string("noname-object"))
