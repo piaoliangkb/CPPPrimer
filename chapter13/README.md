@@ -48,6 +48,8 @@
         - [Message 的析构函数](#message-的析构函数)
         - [Message 的拷贝赋值运算符](#message-的拷贝赋值运算符)
         - [Message 的 swap 函数](#message-的-swap-函数)
+    - [13.5 动态内存管理类](#135-动态内存管理类)
+        - [练习13.43 用 for_each 和 lambda 代替 for 循环](#练习1343-用-for_each-和-lambda-代替-for-循环)
 
 <!-- /TOC -->
 
@@ -955,4 +957,41 @@ void swap(Message &lhs, Message &rhs)
     for (auto f : rhs.folders)
         f->addMsg(&rhs);
 }
+```
+
+## 13.5 动态内存管理类
+
+有些类需要自己进行内存分配。
+
+### 练习13.43 用 for_each 和 lambda 代替 for 循环
+
+```cpp
+std::for_each(elements, first_free, [this](std::string& elem) { alloc.destroy(&elem); });
+```
+
+疑惑点：`elements`, `first_free` 都是 `std::string*` 类型，为何 `lambda` 参数列表为 `std::string` 类型的引用？ 
+
+```cpp
+void f(std::string &s)
+{
+    cout << s << endl;
+    cout << *(&s) << endl;
+}
+
+int main()
+{
+    string* sp = new string("hello");
+    cout << *sp << endl;
+    f(*sp);
+    auto ff = [](std::string& s) { cout << s << endl; };
+    ff(sp);
+}
+```
+
+上述代码会发生错误：
+
+```cpp
+candidate function not viable: no known conversion from 'std::__cxx11::string *'
+      (aka 'basic_string<char> *') to 'std::string &' (aka 'basic_string<char> &') for 1st argument; dereference the argument with *
+    auto ff = [](std::string& s) { cout << s << endl; };
 ```

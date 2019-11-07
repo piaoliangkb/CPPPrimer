@@ -967,7 +967,7 @@ for (size_t i = 0; i != 10; ++i)
 
 #### allocator 类
 
-allocator 是一个模板，必须知名这个 allocator 可以分配的对象类型：
+allocator 是一个模板，必须指明这个 allocator 可以分配的对象类型：
 
 ```cpp
 allocator<string> alloc;
@@ -979,7 +979,7 @@ auto const p = alloc.cllocate(n);  // 分配 n 个未初始化的 string
 操作 | 含义
 --- | ---
 allocator<T> a | 定义一个名为 a 的 allocator 对象，可以为类型为 T 的对象分配内存
-a.allocate(n) | 分配一段为构造的内存，保存 n 个 T 对象
+a.allocate(n) | 分配一段为构造的内存，保存 n 个 T 对象，返回指向构造后第一个内存地址的指针
 a.deallocate(p, n) | 释放从 p 中地址开始的内存，这块内存保存了 n 个类型为 T 的对象；p 是由 allocate 返回的指针，且 n 必须是 p 创建时候的大小；调用 deallocate 之前，必须对内存中创建的对象调用 destroy
 a.construct(p, args) | p 指向一块原始内存：arg 被传递给类型为 T 的构造函数，用来在 p 指向的内存中构造一块对象
 a.destroy(p) | 对 p 指向的对象执行析构函数
