@@ -971,27 +971,12 @@ std::for_each(elements, first_free, [this](std::string& elem) { alloc.destroy(&e
 
 疑惑点：`elements`, `first_free` 都是 `std::string*` 类型，为何 `lambda` 参数列表为 `std::string` 类型的引用？ 
 
-```cpp
-void f(std::string &s)
-{
-    cout << s << endl;
-    cout << *(&s) << endl;
-}
+思考：例如对于一个数组 `int* arr[10]`,则 `elements = std::begin(arr), first_free = std::end(arr)`.
 
-int main()
-{
-    string* sp = new string("hello");
-    cout << *sp << endl;
-    f(*sp);
-    auto ff = [](std::string& s) { cout << s << endl; };
-    ff(sp);
-}
-```
+那么当使用 `for_each` 遍历这个范围时，实际上取到的是诸如 `arr[1], arr[2]` 等这些解引用结果。
 
-上述代码会发生错误：
+>ref: [cppreference: for_each](https://zh.cppreference.com/w/cpp/algorithm/for_each)
 
-```cpp
-candidate function not viable: no known conversion from 'std::__cxx11::string *'
-      (aka 'basic_string<char> *') to 'std::string &' (aka 'basic_string<char> &') for 1st argument; dereference the argument with *
-    auto ff = [](std::string& s) { cout << s << endl; };
-```
+对于给定的函数对象，应用于范围内 [first, end) 每个元素 **解引用** 的对象。
+
+对于上述 `elements`, `first_free` 解引用为 `std::string` 类型。
