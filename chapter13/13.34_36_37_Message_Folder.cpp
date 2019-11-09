@@ -1,6 +1,7 @@
 #include <iostream>
 #include <set>
 #include <string>
+#include <utility>
 
 class Folder;
 class Message;
@@ -41,6 +42,10 @@ public:
 
     Message(const Message &);
     Message &operator=(const Message &);
+
+    Message(Message &&);
+    Message &operator=(Message &&);
+
     ~Message();
 
     // 从给定 Folder 集合中添加/删除本 Message
@@ -68,6 +73,9 @@ private:
 
     // 从当前类的 folders 中的每个 Folder 删除当前 Message
     void remove_from_folders();
+
+    // 用于移动操作来更新所有的 Message 在 Folder 中的信息
+    void move_Folders(Message *);
 };
 
 //----------------implementation of message--------//
@@ -129,6 +137,31 @@ void swap(Message &lhs, Message &rhs) {
         f->addMsg(&rhs);
 }
 
+void Message::move_Folders(Message *m) {
+    folders = std::move(m->folders); // 避免了拷贝 set
+    for (auto f : folders) {
+        f->remMsg(m);
+        f->addMsg(this);
+    }
+    m->folders.clear(); // 确保销毁 m 是无害的
+}
+
+Message::Message(Message &&m)
+    : contents(std::move(m.contents))
+{
+    move_Folders(&m);
+}
+
+Message& Message::operator=(Message &&rhs)
+{
+    if (this != &rhs)
+    {
+        remove_from_folders();
+        contents = std::move(rhs.contents);
+        move_Folders(&rhs);
+    }
+    return *this;
+}
 //----------------implementation of folder----------//
 
 // 拷贝时使用，参数作为右侧的被拷贝对象，
@@ -192,6 +225,13 @@ int main()
     std::cout << "show whats in [books] : ";
     books.show_messages();
     std::cout << std::endl;
+
+    std::cout << "after move m2 to m1: " << std::endl;
+    m1 = std::move(m2);
+    std::cout << "show whats in [says] : ";
+    says.show_messages();
+    std::cout << "\nshow whats in [books] : ";
+    books.show_messages();
 
     return 0;
 }

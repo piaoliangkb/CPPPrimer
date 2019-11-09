@@ -50,6 +50,28 @@
         - [Message 的 swap 函数](#message-的-swap-函数)
     - [13.5 动态内存管理类](#135-动态内存管理类)
         - [练习13.43 用 for_each 和 lambda 代替 for 循环](#练习1343-用-for_each-和-lambda-代替-for-循环)
+    - [13.6 对象移动](#136-对象移动)
+        - [13.6.1 右值引用](#1361-右值引用)
+            - [左值和右值的区分（左值持久，右值短暂）](#左值和右值的区分左值持久右值短暂)
+            - [变量是左值](#变量是左值)
+            - [标准库 move 函数](#标准库-move-函数)
+        - [13.6.2 移动构造函数和移动赋值运算符](#1362-移动构造函数和移动赋值运算符)
+            - [移动操作，标准库容器，异常](#移动操作标准库容器异常)
+            - [为何移动构造函数需要标记为 noexcept](#为何移动构造函数需要标记为-noexcept)
+            - [移动赋值运算符](#移动赋值运算符)
+            - [移后源对象必须可析构，有效的](#移后源对象必须可析构有效的)
+            - [合成的移动操作和其他操作之间的关系](#合成的移动操作和其他操作之间的关系)
+            - [构造函数的匹配](#构造函数的匹配)
+            - [拷贝并交换赋值运算符(copy and swap)和移动操作](#拷贝并交换赋值运算符copy-and-swap和移动操作)
+            - [三/五法则 更新](#三五法则-更新)
+            - [Message 类的移动操作](#message-类的移动操作)
+                - [移动构造函数](#移动构造函数)
+                - [移动赋值运算符](#移动赋值运算符-1)
+            - [移动迭代器](#移动迭代器)
+                - [用 uninitialized_copy 代替 StrVec::reallocate 成员的 for 循环](#用-uninitialized_copy-代替-strvecreallocate-成员的-for-循环)
+            - [练习13.51 unique_ptr 不能拷贝，但是函数以值得方式返回 unique_ptr，解释函数为什么是合法的？](#练习1351-unique_ptr-不能拷贝但是函数以值得方式返回-unique_ptr解释函数为什么是合法的)
+            - [练习13.52 解释 HasPtr 对象赋值时发生了什么。](#练习1352-解释-hasptr-对象赋值时发生了什么)
+            - [练习13.53](#练习1353)
 
 <!-- /TOC -->
 
@@ -980,3 +1002,457 @@ std::for_each(elements, first_free, [this](std::string& elem) { alloc.destroy(&e
 对于给定的函数对象，应用于范围内 [first, end) 每个元素 **解引用** 的对象。
 
 对于上述 `elements`, `first_free` 解引用为 `std::string` 类型。
+
+## 13.6 对象移动
+
+- 旧版本的 C++ 标准：容器中保存的类必须是可拷贝的。
+
+- 新版本的 C++ 标准：可以用容器保存不可拷贝的类型，只要他们能被移动。
+
+C++11 新标准的一个最主要的特性就是可以移动而非拷贝对象的能力。有些情况下，对象拷贝后就立即被销毁了，这种时候，移动而非拷贝对象会大幅度提升性能。
+
+例如上述的 StrVec，我们将旧元素移动到新位置。还有一些 IO 类或 unique_ptr 这样的类，包含不能被共享的资源，所以他们不能被拷贝，只能移动。
+
+- 标注库容器，string，shared_ptr 类既支持移动也支持拷贝。
+
+- IO 类和 unique_ptr 类可以移动但不能拷贝。
+
+### 13.6.1 右值引用
+
+为了支持移动操作，C++ 新标准引入了一种新的引用类型—— **右值引用(rvalue reference)**，即必须绑定到右值的引用。
+
+- 通过 `&&` 而不是 `&` 来获得右值引用
+
+- 只能绑定到一个将要销毁的对象。（可以自由地将一个右值引用的资源移动到另一个对象上）
+
+一般而言，一个左值表达式表示的是一个对象的身份，而一个右值表达式表示的是对象的值。
+
+- 左值引用(lvalue reference) 即常规引用：不能将其绑定到要求转换的表达式、字面常量或是返回右值的表达式。
+
+- 右值引用(rvalue reference)：可以将一个右值引用绑定到这些表达式上，但是不能将一个右值引用直接绑定到一个左值上。
+
+```cpp
+int i = 42;
+int &r = i;    // 左值引用
+int &&rr = i;  // 不能将一个右值引用绑定到一个左值上
+int &r2 = i*42; // i*42 是一个右值，不能将左值引用绑定到一个右值上
+const int &r3 = i*42;  // 可以将一个 const 的引用绑定到一个右值上
+int &&rr2 = i*42;  // 可以将右值引用绑定到 i*42 上
+```
+
+- 返回左值的表达式的例子：返回左值引用的函数，赋值、下标、解引用、前置递增/递减运算符。
+
+- 返回右值的表达式的例子：返回非引用类型的函数，算数、关系、位、后置递增/递减运算符。
+
+不能将左值引用绑定到返回右值的表达式上，但是可以将一个 const 的左值引用或者一个右值引用绑定到这类表达式上。
+
+#### 左值和右值的区分（左值持久，右值短暂）
+
+- 左值有持久的状态。
+
+- 右值要么是字面常量，要么是在表达式求值过程中创建的临时对象。
+
+由于右值引用只能绑定到临时对象，即：
+
+1. 该引用的对象将要被销毁
+
+2. 该对象没有其他用户
+
+那么使用右值引用的代码可以自由地接管所引用的对象的资源。
+
+#### 变量是左值
+
+变量是持久的，所以是左值。不能将一个右值引用直接绑定到一个变量上。
+
+#### 标准库 move 函数
+
+不能将一个右值引用直接绑定到一个左值上，但是可以显式地将一个左值转换为对应地右值引用类型。
+
+- 使用名为 `move` 标准库函数来获得绑定到左值上的右值引用。函数定义在头文件 `utility` 中。
+
+```cpp
+int rr1 = 40;
+int &&rr2 = std::move(rr1);
+```
+
+调用 `std::move` 函数意味着除了对 `rr1` 赋值或者销毁之外，我们将不再使用它。在调用 `std::move` 之后，我们不能对移后源对象的值做任何假设。
+
+- 即：我们可以销毁一个移后源对象，也可以赋予它新值，但是不能使用一个移后源对象的值。
+
+- 此外：使用 `move` 的代码应该使用 `std::move` 而不是 `move` 从而避免潜在的名字冲突。
+
+### 13.6.2 移动构造函数和移动赋值运算符
+
+为了让自己的类型支持移动操作，需要为其定义移动构造函数和移动赋值运算符。
+
+- 移动构造函数的第一个参数是该类型的一个右值引用，此外，任何额外的参数都必须有默认实参。
+
+- 移动构造函数需要保证移后源对象处于销毁无害的状态。即源对象指向资源的所有权已经归属新创建的对象。
+
+例子，StrVec 类的移动构造函数：
+
+```cpp
+StrVec::StrVec(StrVec &&s) noexcept
+    : elements(s.elements), first_free(s.first_free), cap(s.cap)
+{
+    s.elements = s.first_free = s.cap = nullptr;
+}
+```
+
+#### 移动操作，标准库容器，异常
+
+由于移动操作窃取资源，而不分配资源，因此移动操作通常不会抛出任何异常。
+
+当编写一个不抛出异常的操作时，应该通知标准库。否则标准库会认为移动我们的类对象时可能会抛出异常，并且为了处理这种可能性做一些额外的工作。
+
+- C++11 新标准中，可以在构造函数中指明 `noexcept` 来承诺我们的函数不抛出异常。
+
+- 我们必须在类头文件的声明和定义中都指定 `noexcept`。
+
+```cpp
+class StrVec {
+public:
+    StrVec(StrVec&&) noexcept;
+};
+
+StrVec::StrVec(StrVec &&s) noexcept
+{
+    // ...
+}
+```
+
+- 不抛出异常的移动构造函数和移动赋值运算符必须标记为 `noexcept`。
+
+#### 为何移动构造函数需要标记为 noexcept
+
+对于一个 `vector` 来说：
+
+- 若移动构造函数不发生异常，在重新分配元素的时候会使用移动构造函数。
+
+- 否则使用拷贝构造函数来防止发生异常时回退到原来的状态。
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8rjn2lmalj20sg0ohgy3.jpg)
+
+#### 移动赋值运算符
+
+如果我们的移动赋值运算符不抛出任何异常，我们应该将它标记为 nonexcept。
+
+类似拷贝复制运算符，移动赋值运算符必须能正确处理自赋值：
+
+```cpp
+StrVec& StrVec::operator=(StrVec &&rhs) noexcept
+{
+    if (this == &rhs)
+    {
+        free();
+        elements = rhs.elements();
+        first_free = rhs.first_free;
+        cap = rhs.cap;
+        rhs.elements = rhs.first_free = rhs.cap = nullptr;
+    }
+    return *this;
+}
+```
+
+如果左侧和右侧指向相同的对象，则不做任何事情。
+
+移动赋值运算符需要右侧运算对象的一个右值，但是此右值可能是 move 调用的返回结果。
+
+我们不能再使用右侧运算对象的资源之前就释放左侧运算对象的资源。
+
+和拷贝赋值运算符处理自赋值情况对比：
+
+```cpp
+std::pair<std::string *, std::string *>
+StrVec::alloc_n_copy(const std::string *begin, const std::string *end) {
+    // beg 指向新分配的内存首位置
+    auto beg = alloc.allocate(end - begin);
+    // std::uninitialized_copy 返回指向最后一个构造元素之后的位置
+    return {beg, std::uninitialized_copy(begin, end, beg)};
+}
+
+
+// 拷贝赋值运算符在释放已有元素之前调用 alloc_n_copy 来处理自赋值情况
+StrVec &StrVec::operator=(const StrVec &rhs) {
+    auto data = alloc_n_copy(rhs.begin(), rhs.end());
+    free();
+    elements = data.first;
+    first_free = cap = data.second;
+    return *this;
+}
+```
+
+#### 移后源对象必须可析构，有效的
+
+上述将移后源对象的指针置为 nullptr 来保证可析构状态。
+
+移动操作还必须保证对象仍然是有效的，即可以安全地为其赋予新值，但是移后源对象的值我们是未知的。
+
+总结：
+
+移动操作之后，移后源对象必须保持有效的、可析构的状态，但是用户不能对其值做任何假设。
+
+#### 合成的移动操作和其他操作之间的关系
+
+**编译器合成移动构造函数和移动构造运算符的条件：**
+
+- 不会合成的情况：
+
+1. 如果一个类定义了自己的拷贝构造函数，拷贝赋值运算符或者析构函数。
+
+- 会合成的情况：
+
+1. 一个类没有定义自己版本的拷贝控制成员，且类的每个非 static 数据成员都可以移动构造或者移动赋值时。
+
+**将移动操作定义为删除的函数的情况：**
+
+1. 类成员定义了自己的拷贝构造函数而未定义移动构造函数；类成员未定义自己的拷贝构造函数，且编译器不能为其合成移动构造函数。
+
+2. 类成员的移动构造函数，是删除的或者不可访问的。
+
+3. 析构函数是删除的，或不可访问的。
+
+4. 类成员是 const 的或者是引用。
+
+**如果类定义了一个移动构造函数/赋值运算符，则该类的合成拷贝构造函数/赋值运算符会被定义为删除的。**
+
+即：定义了移动操作的类也必须定义拷贝操作，否则这些成员默认地被定义为删除的。
+
+#### 构造函数的匹配
+
+如果一个类既有移动构造函数，也有拷贝构造函数，编译器使用普通的函数匹配规则来确定使用哪个构造函数。
+
+例如 StrVec：
+
+- 拷贝构造函数接受一个 const StrVec 的引用，它可以用于任何可以转换为 StrVec 的类型。
+
+- 移动构造函数接受一个 StrVec&&，因此只能用于实参是非 static 右值的类型。
+
+```cpp
+StrVec v1, v2;
+v1 = v2;     // v2左值，拷贝赋值运算符
+
+StrVec getVec(istream&);  // 一个函数，返回右值。
+v2 = getVec(cin);  // getVec(cin) 是右值，移动赋值运算符
+```
+
+没有移动构造函数，则右值也可以被拷贝。即使通过 move 调用时，也会被拷贝。
+
+```cpp
+class Foo {
+public:
+    Foo() = default;
+    Foo(const Foo&);   // 拷贝构造函数
+}；
+
+Foo x;
+Foo y(x);              // x是左值，使用拷贝构造函数
+Foo z(std::move(x));   // 未定义移动构造函数，使用拷贝构造函数
+```
+
+用拷贝构造函数代替移动构造函数几乎肯定是安全的。它会拷贝给定对象，并将源对象置于有效状态（不会改变原对象的值）。
+
+#### 拷贝并交换赋值运算符(copy and swap)和移动操作
+
+例如 HasPtr 类：
+
+```cpp
+class HasPtr {
+public:
+    HasPtr(HasPtr &&p) noexcept : ps(p.ps), i(p.i) { p.ps = nullptr; }
+
+    HasPtr& operator=(HasPtr rhs) { swap(*this, rhs); return *this; }
+};
+```
+
+该赋值运算符参数为非引用类型，意味着此参数使用拷贝初始化，拷贝初始化的选择：
+
+- 拷贝构造函数：参数为左值
+
+- 移动构造函数：参数为右值
+
+例如：
+
+```cpp
+// hp 和 hp2 都是 HasPtr 对象
+hp = hp2;
+
+hp = std::move(hp2);
+```
+
+第二个赋值中，我们调用 `std::move` 将一个右值绑定到 hp2 上。此时，拷贝构造函数和移动构造函数都是可行的。但是实参是一个右值引用，移动构造函数是精确匹配的。
+
+#### 三/五法则 更新
+
+所有五个拷贝控制成员应该看作一个整体。
+
+如果一个类定义了任何一个拷贝操作，他就应该定义所有五个操作。
+
+例如：某些类必须定义拷贝构造函数，拷贝赋值运算符，析构函数才能工作。
+
+这些类通常拥有一个资源，拷贝成员必须拷贝此资源。一般来说拷贝资源会产生额外的开销，那么定义移动构造函数和移动赋值运算符就可以避免资源开销的问题。
+
+#### Message 类的移动操作
+
+##### 移动构造函数
+
+通过定义 Message 类的移动操作，从而使用 string 和 set 的移动操作来避免拷贝 contents 和 folders 成员的额外开销。
+
+对 Message 进行移动的时候，还需要更新所有当前 Message 的 Folder 信息。
+
+定义函数来实现 Folder 的更新：
+
+```cpp
+void Message::move_Folders(Message *m)
+{
+    folders = std::move(m->folders);  // 避免了拷贝 set
+    for (auto f : folders) {
+        f->remMsg(m);
+        f->addMsg(this);
+    }
+    m->folders.clear();   // 确保销毁 m 是无害的
+}
+```
+
+向 set 插入一个元素可能会抛出异常：添加元素的操作要求分配内存，可能会抛出 bad_alloc 异常。所以 Message 的移动构造函数和移动赋值运算符可能会抛出异常。
+
+由于 Message 的析构函数会遍历 folders 来从每个 Folder 删除当前消息，所以移动结束之后调用 `m->folders.clear()` 来让 set 变为空。
+
+此时，Message 的移动构造函数可为：
+
+```cpp
+Message::Message(Message &&m)
+    : contents(std::move(m.contents))
+{
+    move_Folders(&m);
+}
+```
+
+##### 移动赋值运算符
+
+对于移动赋值运算符来说，和移动赋值构造函数的不同是，**需要销毁左侧运算对象的旧状态。** 和移动构造函数相比，多了 `remove_from_folders();`
+
+```cpp
+Message& Message::operator=(Message &&rhs)
+{
+    if (this != &rhs) {
+        remove_from_folders();
+        contents = std::move(rhs.contents);
+        move_folders(&rhs);
+    }
+    return *this;
+}
+```
+
+和拷贝赋值运算符对比：
+
+```cpp
+Message &Message::operator=(const Message &rhs) {
+    remove_from_folders();
+    contents = rhs.contents;
+    folders = rhs.folders;
+    add_to_folders(rhs);
+    return *this;
+}
+```
+
+#### 移动迭代器
+
+C++11 新标准中定义了一种 **移动迭代器(move iterator)适配器**，通过改变给定迭代器的解引用运算符的行为来适配此迭代器。
+
+- 普通迭代器的解引用运算符返回一个指向元素的左值。
+
+- 移动迭代器的解引用运算符生成一个右值引用。
+
+可以使用标准库的 `make_move_iterator` 函数将一个普通迭代器转换为一个移动迭代器。
+
+##### 用 uninitialized_copy 代替 StrVec::reallocate 成员的 for 循环
+
+StrVec 的 `reallocate` 成员实现如下：
+
+```cpp
+void StrVec::reallocate() {
+    auto newcapacity = size() ? 2 * size() : 1; // 新空间大小
+    auto newdata = alloc.allocate(newcapacity); // newdata 指向分配的第一个位置
+    auto dest = newdata; // 开始移动构造的第一个位置为新分配的位置
+    auto elem = elements; // elem 指向第一个原始元素
+    for (size_t i = 0; i != size(); ++i)
+        // 将原来所有的元素移动构造到目标地址
+        alloc.construct(dest++, std::move(*elem++)); 
+    free(); // 原 elements, cao 不变，释放该段地址的内容
+    elements = newdata;
+    first_free = dest;
+    cap = elements + newcapacity;
+}
+```
+
+它使用了一个 for 循环调用 construct 将旧元素移动到新内存中。可以将移动迭代器传递给 `uninitialized_copy`.
+
+`uninitialized_copy` 使用迭代器的解引用运算符从输入序列中提取元素，解引用运算符生成的是右值引用，表示 construct 使用移动构造函数来构造元素。
+
+```cpp
+void StrVec::reallocate() {
+    auto newcapacity = size() > 2 * size() : 1;
+    auto first = alloc.allocate(newcapacity);
+    auto last = uninitialized_copy(make_move_iterator(begin()),
+                                   make_move_iterator(end),
+                                   first);
+    free();
+    elements = first;
+    first_free = last;
+    cap = elements + newcapacity;
+}
+```
+
+需要注意，只有确定算法为一个元素赋值或者将其传递给一个用户定义的函数后不再访问它，才能将移动迭代器传递给算法。
+
+只有需要移动操作，且移动操作是安全地，才可以使用 `std::move`。
+
+#### 练习13.51 unique_ptr 不能拷贝，但是函数以值得方式返回 unique_ptr，解释函数为什么是合法的？
+
+```cpp
+unique_ptr<int> clone(int p)
+{
+    // ...
+    return unique_ptr<int>(new int(p));
+}
+```
+
+`clone()` 函数调用返回值是一个右值，所以在使用它的时候会使用移动赋值运算符而不是拷贝赋值运算符，不会进行拷贝操作，所以是合法的。
+
+#### 练习13.52 解释 HasPtr 对象赋值时发生了什么。
+
+```cpp
+HasPtr hp, hp2;
+hp = hp2;
+hp = std::move(hp2);
+```
+
+HasPtr 的赋值运算符和 swap 函数：
+
+```cpp
+HasPtr& operator=(HasPtr rhs)
+{
+    swap(*this, rhs);
+    return *this;
+}
+
+inline void swap(HasPtr &lhs, HasPtr &rhs)
+{
+    std::cout << "call function HasPtr's swap()" << std::endl;
+    using std::swap;
+    swap(lhs.ps, rhs.ps);
+    swap(lhs.i, rhs.i);
+}
+
+// HasPtr 的数据成员
+std::string *ps;
+int i;
+```
+
+由于赋值运算符的参数为非引用类型，所以将采用拷贝初始化。
+
+当传入 `hp2` 的时候，传入的是一个左值，所以使用拷贝赋值运算符。将 `*this` 和 `rhs` 两个数据成员 `std::string *ps` 和 `int i`交换 。
+
+当传入 `std::move(hp2)` 的时候，传入的是一个右值，使用移动赋值运算符，被赋值的对象获得 hp2 的控制权。同样将两个数据成员进行交换。
+

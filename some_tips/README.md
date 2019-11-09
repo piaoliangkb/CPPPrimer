@@ -628,3 +628,58 @@ struct X {
 4. 插入了元素 x3，重新分配空间，拷贝三个元素（调用3次拷贝构造函数），将前两个元素析构（调用两次析构函数）。
 
 5. 当离开作用域的时候，vector 被销毁，它的元素也被销毁（调用3次析构函数），x1, x2, x3 被销毁（调用3次析构函数）。
+
+## std::allocator<T> 类型对象拷贝
+
+>ex13.49 为 StrVec 添加一个移动构造函数和移动赋值运算符
+
+StrVec 中的成员为：
+
+```cpp
+std::allocator<std::string> alloc;
+
+void chk_n_alloc() {
+    if (size() == capacity())
+        reallocate();
+}
+
+std::pair<std::string *, std::string *> alloc_n_copy(const std::string *,
+                                                        const std::string *);
+
+void alloc_n_move(size_t);
+
+void free();
+
+void reallocate();
+
+std::string *elements;   // 指向数组首元素的指针
+std::string *first_free; // 指向数组第一个空闲元素
+std::string *cap;        // 指向数组尾后位置的指针
+```
+
+定义的移动构造函数和移动赋值运算符为：
+
+```cpp
+StrVec::StrVec(StrVec &&s) noexcept
+    : elements(std::move(s.elements)),
+      first_free(std::move(s.first_free)), 
+      cap(std::move(s.cap))
+{
+    s.elements = s.first_free = s.cap = nullptr;
+}
+
+StrVec &StrVec::operator=(StrVec &&rhs) noexcept
+{
+    if (this != &rhs) {
+        free(); // 先销毁左侧对象的旧状态
+        elements = std::move(rhs.elements);
+        first_free = std::move(rhs.first_free);
+        cap = std::move(rhs.cap);
+        // alloc = std::move(rhs.alloc);
+        rhs.elements = rhs.first_free = rhs.cap = nullptr;
+    }
+    return *this;
+}
+```
+
+均没有对 `alloc` 进行拷贝或移动。同理拷贝操作也没有对 `alloc` 进行拷贝或移动。

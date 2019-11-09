@@ -17,6 +17,10 @@ public:
 
     StrVec &operator=(const StrVec &);
 
+    StrVec(StrVec &&) noexcept;
+
+    StrVec &operator=(StrVec &&) noexcept;
+
     ~StrVec();
 
     void push_back(const std::string &);
@@ -38,7 +42,7 @@ public:
     void printElems();
 
 private:
-    std::allocator<std::string> alloc;
+    static std::allocator<std::string> alloc;
 
     void chk_n_alloc() {
         if (size() == capacity())
@@ -124,8 +128,8 @@ void StrVec::reallocate() {
     auto dest = newdata; // 开始移动构造的第一个位置为新分配的位置
     auto elem = elements; // elem 指向第一个原始元素
     for (size_t i = 0; i != size(); ++i)
-        alloc.construct(
-            dest++, std::move(*elem++)); // 将原来所有的元素移动构造到目标地址
+        // 将原来所有的元素移动构造到目标地址
+        alloc.construct(dest++, std::move(*elem++)); 
     free(); // 原 elements, cao 不变，释放该段地址的内容
     elements = newdata;
     first_free = dest;
@@ -161,6 +165,28 @@ StrVec::StrVec(std::initializer_list<std::string> il) {
     auto newdata = alloc_n_copy(il.begin(), il.end());
     elements = newdata.first;
     first_free = cap = newdata.second;
+}
+
+// 移动构造函数
+StrVec::StrVec(StrVec &&s) noexcept
+    : elements(std::move(s.elements)),
+      first_free(std::move(s.first_free)), 
+      cap(std::move(s.cap))
+{
+    s.elements = s.first_free = s.cap = nullptr;
+}
+
+StrVec &StrVec::operator=(StrVec &&rhs) noexcept
+{
+    if (this != &rhs) {
+        free(); // 先销毁左侧对象的旧状态
+        elements = std::move(rhs.elements);
+        first_free = std::move(rhs.first_free);
+        cap = std::move(rhs.cap);
+        // alloc = std::move(rhs.alloc);
+        rhs.elements = rhs.first_free = rhs.cap = nullptr;
+    }
+    return *this;
 }
 
 #endif
