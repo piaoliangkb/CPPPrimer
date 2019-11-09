@@ -93,7 +93,7 @@ void StrVec::free() {
     // 先 destroy 存在的元素
     // 再 deallocate 回收所有空间
     if (elements) {
-        // 传入参数为引用，但是 elements 和 first_free 解引用为 string 类型
+        // 传入参数为引用，elements 和 first_free 解引用为 string 类型
         std::for_each(elements, first_free, [this](std::string& elem) { alloc.destroy(&elem); });
         alloc.deallocate(elements, cap - elements);
     }
