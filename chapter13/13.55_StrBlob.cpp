@@ -1,9 +1,7 @@
-#ifndef HEADER_12_19_H
-#define HEADER_12_19_H
-
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
 
 class StrBlobPtr;
 class StrBlob;
@@ -16,23 +14,39 @@ public:
     using size_type = std::vector<std::string>::size_type;
 
     // 默认构造函数
-    StrBlob() : data(std::make_shared<std::vector<std::string>>()){};
+    StrBlob() : data(std::make_shared<std::vector<std::string>>()){}
+
     // 接受一个初始值列表的构造函数
     StrBlob(std::initializer_list<std::string> il)
-        : data(std::make_shared<std::vector<std::string>>(il)){};
+        : data(std::make_shared<std::vector<std::string>>(il)){}
 
     size_type size() const { return data->size(); }
+
     bool empty() const { return data->empty(); }
-    void push_back(const std::string &t) { data->push_back(t); }
+
+    void push_back(const std::string &t) { 
+        std::cout << "use push_back(const std::string&)" << std::endl;
+        data->push_back(t); 
+    }
+
+    void push_back(std::string &&t) { 
+        std::cout << "use push_back(std::string&&)" << std::endl;
+        data->push_back(std::move(t)); 
+    }
+
     void pop_back();
+
     std::string &front() const;
+
     std::string &back() const;
 
     StrBlobPtr begin();
+
     StrBlobPtr end();
 
 private:
     std::shared_ptr<std::vector<std::string>> data;
+
     void check(size_type i, const std::string &msg) const;
 };
 
@@ -43,11 +57,13 @@ private:
 class StrBlobPtr {
 public:
     using size_type = std::vector<std::string>::size_type;
+
     bool operator!=(const StrBlobPtr &p) { return p.curr != curr; }
 
     // curr 显式初始化为 0
     // wptr 隐式初始化为一个空 weak_ptr
     StrBlobPtr() : curr(0) {}
+
     StrBlobPtr(const StrBlob &a, size_type sz = 0) : wptr(a.data), curr(sz) {}
 
     // 解引用
@@ -61,6 +77,7 @@ public:
 
 private:
     std::weak_ptr<std::vector<std::string>> wptr;
+
     size_type curr;
 
     std::shared_ptr<std::vector<std::string>> check(size_type,
@@ -122,4 +139,12 @@ StrBlobPtr &StrBlobPtr::incr() {
     return *this;
 }
 
-#endif
+int main() {
+    StrBlob sb;
+    sb.push_back("hello");
+
+    std::string s("world");
+    sb.push_back(s);
+
+    return 0;
+}
