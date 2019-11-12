@@ -50,6 +50,8 @@
 - [类内定义的成员函数默认是内联的，类外定义的成员函数需要加 inline 定义](#类内定义的成员函数默认是内联的类外定义的成员函数需要加-inline-定义)
 - [拷贝构造函数的参数为什么一定是引用类型](#拷贝构造函数的参数为什么一定是引用类型)
 - [vector 的元素为类类型时，添加元素、销毁容器时构造函数，析构函数调用情况](#vector-的元素为类类型时添加元素销毁容器时构造函数析构函数调用情况)
+- [std::allocator<T> 类型对象拷贝](#stdallocatort-类型对象拷贝)
+- [一个简单的 string 类的实现](#一个简单的-string-类的实现)
 
 <!-- /TOC -->
 --------------------------------
@@ -683,3 +685,17 @@ StrVec &StrVec::operator=(StrVec &&rhs) noexcept
 ```
 
 均没有对 `alloc` 进行拷贝或移动。同理拷贝操作也没有对 `alloc` 进行拷贝或移动。
+
+## 一个简单的 string 类的实现
+
+根据第十三章课后题目要求，分为不同的版本。
+
+1. 使用 `std::allocator`, 成员变量分别为 `first`, `last` 的版本：
+
+https://github.com/piaoliangkb/cppprimer/blob/master/chapter13/String.h
+
+2. 参考陈硕的实现，抄一遍学习下：
+
+ref: [A trivial String class that designed for write-on-paper in an interview](https://github.com/chenshuo/recipes/blob/fcf9486f5155117fb8c36b6b0944c5486c71c421/string/StringTrivial.h)
+
+https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/String.h
