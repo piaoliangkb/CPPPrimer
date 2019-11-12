@@ -8,9 +8,7 @@
 
 class String {
 public:
-    String() : content(nullptr), last(nullptr) {
-        std::cout << "[call func] : String()" << std::endl;
-    }
+    String();
 
     String(const char *c);
 
@@ -41,6 +39,15 @@ private:
 
     void free();
 };
+
+String::String() {
+    std::cout << "[call func] : String()" << std::endl;
+
+    auto first = alloc.allocate(1);
+    content = first;
+    alloc.construct(first++, '\0');
+    last = first;
+}
 
 String::String(const char *c) {
     std::cout << "[call func] : String(const char*)" << std::endl;

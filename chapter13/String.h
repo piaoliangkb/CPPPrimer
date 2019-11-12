@@ -4,6 +4,9 @@
 #include <string>
 #include <algorithm>
 #include <utility>
+#include <vector>
+
+// now this is the same as which in ex13.50
 
 class String {
 public:
@@ -17,9 +20,9 @@ public:
 
     String& operator=(const String&);
 
-    String(String &&);
+    String(String &&) noexcept;
 
-    String& operator=(String &&);
+    String &operator=(String &&) noexcept;
 
     void printString() const { std::cout << content << std::endl; }
 
@@ -39,7 +42,7 @@ private:
     void free();
 };
 
-String::String() {
+String::String() { 
     std::cout << "[call func] : String()" << std::endl;
 
     auto first = alloc.allocate(1);
@@ -107,7 +110,7 @@ String& String::operator=(const String& rhs) {
     return *this;
 }
 
-String::String(String &&s) {
+String::String(String &&s) noexcept {
     std::cout << "[call func] : move-constructor String(String &&)" << std::endl;
 
     content = std::move(s.content);
@@ -116,7 +119,7 @@ String::String(String &&s) {
     s.content = s.last = nullptr;
 }
 
-String& String::operator=(String &&s) {
+String &String::operator=(String &&s) noexcept {
     std::cout << "[call func] : move-assignment-operator operator=(String&&)" << std::endl;
     if (this != &s) {
         free();
@@ -141,12 +144,4 @@ String::~String() {
     std::cout << "[call func] : ~String()" << std::endl;
 
     free();
-}
-
-int main() {
-    {
-        String s("hello, world"), s2;
-        s2 = std::move(s);
-        s2.printString();
-    }
 }
