@@ -1,0 +1,32 @@
+C/C++ support for Visual Studio Code is provided by a Microsoft C/C++ extension 
+to enable cross-platform C and C++ development on Windows, Linux, and macOS. 
+The extension is still in preview and our focus is code editing, navigation, 
+and debugging support for C and C++ code everywhere that VS Code runs.
+
+Below you can see syntax highlighting, smart suggestions, and IntelliSense for 
+C++ source code in VS Code with the C++ extension.
+
+Note: If you just want a lightweight tool to edit your C++ files, Visual Studio 
+Code is a great choice. But if you want the best possible experience for editing, 
+testing and debugging your existing Visual C++ projects or debugging on Windows, 
+we recommend Visual Studio IDE.
+
+Visual Studio Community is a free edition and includes:
+
+support for CMake or any other build system
+support for Clang and GCC as well as the Microsoft C++ compiler
+support for CTest, Google Test, Boost.Test, and Microsoft Native Test Framework
+C++ code analysis tools including C++ Core Guidelines checkers
+the state-of-the-art Visual Studio debugger
+
+Getting started
+
+Install Visual Studio Code
+If you don't have VS Code installed, go to the Download page to find the VS Code 
+install that matches your platform. Installing VS Code is fast and should only take a few minutes.
+
+Install the Microsoft C/C++ extension
+Open VS Code.
+Click the Extensions view icon on the Sidebar (Ctrl+Shift+X).
+Search for c++.
+Click Install.
