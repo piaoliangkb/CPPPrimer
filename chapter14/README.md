@@ -38,6 +38,17 @@
             - [不同类型核能具有相同的调用形式](#不同类型核能具有相同的调用形式)
             - [标准库 function 类型](#标准库-function-类型)
             - [重载的函数与 function](#重载的函数与-function)
+    - [14.9 重载，类型转换与运算符](#149-重载类型转换与运算符)
+        - [14.9.1 类型转换运算符](#1491-类型转换运算符)
+            - [显式的类型转换运算符](#显式的类型转换运算符)
+            - [转换为 bool](#转换为-bool)
+        - [14.9.2 避免有二义性的类型转换](#1492-避免有二义性的类型转换)
+            - [实参匹配和相同的类型转换](#实参匹配和相同的类型转换)
+            - [转换目标为内置类型的多重类型转换](#转换目标为内置类型的多重类型转换)
+                - [类型转换的几个经验](#类型转换的几个经验)
+            - [重载函数与转换构造函数](#重载函数与转换构造函数)
+            - [重载函数与用户定义的类型转换](#重载函数与用户定义的类型转换)
+        - [14.9.3 函数匹配与重载运算符](#1493-函数匹配与重载运算符)
 
 <!-- /TOC -->
 
@@ -659,3 +670,242 @@ binops.insert({"+"， add});
 ```cpp
 binops.insert({"+", [](int a, int b) { return add(a, b);}});
 ```
+
+## 14.9 重载，类型转换与运算符
+
+转换构造函数和类型转换运算符共同定义了类类型转换 (class-type conversions)，这样的转换有时被称为：用户定义的类型转换 (user-defined conversions).
+
+### 14.9.1 类型转换运算符
+
+类型转换运算符(conversion operator) 是类的一种特殊成员函数，将一个类类型的值转换为其他类型，形式为：
+
+```cpp
+operator type() const;
+```
+
+类型转换运算符可以面向任意 void 之外的类型进行定义，只要该类型能够作为返回的返回类型。
+
+所以可以转换成指针或引用，而不能转换成数组或者函数类型。
+
+- 类型转换运算符没有显式的返回类型，也没有形参。
+
+- 需要定义为类的成员函数。
+
+- 类型转换运算符通常不应该改变被转换对象的内容，所以一般被定义为 const  成员。
+
+例如：
+
+```cpp
+class SmallInt {
+public:
+    SmallInt(int i = 0) : val(i) {
+        if (i < 0 || i > 255)
+            throw std::out_of_range("Bad SmallInt value");
+    }
+
+    operator int() const { return val; }
+
+private:
+    int val;
+}
+```
+
+```cpp
+SmallInt si;
+si = 4;
+si + 3;
+```
+- 由于构造函数为非 explicit 的，所以 `si = 4;` 等号右侧被隐式地转换成了 SmallInt
+
+- 由于定义了类型转换运算符，所以 `si + 3` 可以将 si 隐式地转换成 int
+
+#### 显式的类型转换运算符
+
+C++11 新标准引入了 **显式的类型转换运算符(explicit conversion operator)**:
+
+```cpp
+class SmallInt {
+public:
+    explicit operator int() const { return val; }
+};
+```
+
+此时，编译器一般不会将一个显式的类型转换运算符用于隐式类型转换：
+
+```cpp
+SmallInt si = 3;
+si + 3; // error
+static_cast<int>(si) + 3; // true
+```
+
+必须显式的强制转换。
+
+若表达式被用作条件，编译器会将显式的类型转换自动应用于它，即下列位置：
+
+- if, while, do 的条件部分
+
+- for 语句头的条件部分
+
+- !, ||, && 的运算对象
+
+- ?: 的条件表达式
+
+#### 转换为 bool
+
+C++11 中，IO 标准库定义了一个向 bool 的显式类型转换。
+
+在任何条件中使用流对象，都会使用为 IO 定义的 `explicit operator bool()`。
+
+### 14.9.2 避免有二义性的类型转换
+
+#### 实参匹配和相同的类型转换
+
+下面的例子定义了两种将 B 转换成 A 的方法：一种使用 B 的类型转换运算符，另一种使用 A 的以 B 为参数的构造函数：
+
+```cpp
+struct B;
+
+struct A {
+    A() = default;
+    A(const B&);
+};
+
+struct B {
+    operator A() const;
+}
+
+A func(const A&);
+
+B b;
+A a = func(b); // 会产生二义性错误，func(B::operator A()) 还是 f(A::A(const B&))
+```
+上述最后一行代码会会产生二义性错误，`func(B::operator A())` 还是 `f(A::A(const B&))`，解决方法是显式地调用类型转换运算符或者转换构造函数：
+
+```cpp
+A a1 = f(b.operator A());
+
+A a2 = f(A(b));
+```
+
+#### 转换目标为内置类型的多重类型转换
+
+类当中定义了多个参数都是算数类型的构造函数，或者转换目标都是算术类型的类型转换运算符：
+
+```cpp
+class A {
+public:
+    A(int);
+    A(double);
+    operator int() const;
+    operator double() const;
+};
+
+void f2(long double);
+
+A a;
+f2(a);
+```
+
+最后一句 `f2(a)` 会产生二义性错误：`f(A::operator int())` 还是 `f(A::operator double())`.
+
+```cpp
+long num;
+A a2(num);
+```
+
+最后一句 `A a2(num);` 会山城二义性错误：`A::A(int)` 还是 `A::A(double)`.
+
+当使用用户定义的类型转换时，编译器会根据标准类型转换的级别决定选择最佳匹配：
+
+```cpp
+short s = 42;
+A a3(s);
+```
+
+上述把 short 提升成 int 的操作优于把 short 转换成 double 的操作。
+
+##### 类型转换的几个经验
+
+- 不要令两个类执行相同的类型转换：如果 Foo 类有一个接受 Bar 类对象的构造函数，则不要在 Bar 类中定义转换目标是 Foo 类的类型转换运算符。
+
+- 避免转换目标是内置算术类型的类型转换。
+
+当已经定义了一个转换成算术类型的类型转换时，接下来不要再定义 **接受算术类型的重载运算符**；不要定义转换到多种算术类型的类型转换。
+
+- 除了显式地向 bool 类型的转换之外，应该尽量避免定义类型转换函数并尽可能地限制那些非显式构造函数
+
+#### 重载函数与转换构造函数
+
+当几个重载函数地参数分属不同的类类型时，如果这些类恰好定义了同样的转换构造函数，会产生二义性：
+
+```cpp
+class C {
+public:
+    C(int);
+};
+
+class D {
+public:
+    D(int);
+};
+
+void manip(const C&);
+void manip(const D&);
+
+manip(10); 
+```
+
+最后一行 `manip(10);` 会产生二义性：`manip(C(10));` 还是 `manip(D(10));`
+
+可以显式构造 `manip(C(10));` 来消除二义性
+
+#### 重载函数与用户定义的类型转换
+
+调用重载函数时，若有多种用户定义的类型转换，我们不会在这些转换用考虑可能出现的标准类型转换(例如从 int 转换成 double)，见例子：
+
+```cpp
+class C {
+public:
+    C(int);
+};
+
+class E {
+public:
+    E(double);
+};
+
+void manip(const C&);
+void manip(const E&);
+
+manip(10); 
+```
+
+最后一行 `manip(10);` 会产生二义性：`manip(C(10));` 还是 `manip(E(double(10)));`
+
+### 14.9.3 函数匹配与重载运算符
+
+表达式中运算符的候选函数集既应该包括成员函数，也应该包括非成员函数。
+
+例如：
+
+```cpp
+class SmallInt {
+public:
+    friend SmallInt operator+(const SmallInt&, const SmallInt&);
+
+    SmallInt(int);
+    operator int() const { return val; }
+private:
+    int val;
+};
+
+SmallInt s1, s2;
+SmallInt s3 = s1 + s2;
+int i = s3 + 0;
+```
+
+最后一句 `int i = s3 + 0;` 会产生二义性：
+
+- 可以把 0 转换成 SmallInt，使用 SmallInt 的 +
+
+- 可以把 s3 转换成 int，使用 int 的 +
