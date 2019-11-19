@@ -52,6 +52,7 @@
 - [vector 的元素为类类型时，添加元素、销毁容器时构造函数，析构函数调用情况](#vector-的元素为类类型时添加元素销毁容器时构造函数析构函数调用情况)
 - [std::allocator<T> 类型对象拷贝](#stdallocatort-类型对象拷贝)
 - [一个简单的 string 类的实现](#一个简单的-string-类的实现)
+- [派生类的析构函数只负责销毁自己的成员](#派生类的析构函数只负责销毁自己的成员)
 
 <!-- /TOC -->
 --------------------------------
@@ -699,3 +700,13 @@ https://github.com/piaoliangkb/cppprimer/blob/master/chapter13/String.h
 ref: [A trivial String class that designed for write-on-paper in an interview](https://github.com/chenshuo/recipes/blob/fcf9486f5155117fb8c36b6b0944c5486c71c421/string/StringTrivial.h)
 
 https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/String.h
+
+## 派生类的析构函数只负责销毁自己的成员
+
+>chapter 15.7.3 派生类的拷贝控制成员
+
+- 派生类的拷贝和移动构造函数在拷贝和移动自有成员的同时，也要拷贝和移动基类部分的成员。
+
+- 派生类赋值运算符必须为其基类部分的成员赋值。
+
+- 析构函数只负责销毁派生类自己分配的资源，派生类对象的基类部分是自动销毁的。

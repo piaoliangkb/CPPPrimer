@@ -16,6 +16,10 @@ public:
     // 派生类负责不同的折扣计算方法
     virtual double net_price(std::size_t n) const { return n * price; }
 
+    virtual void debug() const {
+        std::cout << "std::string bookNo, double price" << std::endl;
+    }
+
     // 虚构函数动态绑定
     virtual ~Quote() = default;  
 
