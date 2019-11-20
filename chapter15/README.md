@@ -60,6 +60,11 @@
             - [构造函数和析构函数中调用虚函数](#构造函数和析构函数中调用虚函数)
         - [15.7.4 继承的构造函数](#1574-继承的构造函数)
             - [继承的构造函数的特点](#继承的构造函数的特点)
+    - [15.8 容器和继承](#158-容器和继承)
+        - [在容器中放置智能指针而非对象](#在容器中放置智能指针而非对象)
+        - [15.8.1 编写 Basket 类](#1581-编写-basket-类)
+            - [定义 Basket 的成员](#定义-basket-的成员)
+            - [隐藏指针](#隐藏指针)
 
 <!-- /TOC -->
 
@@ -437,7 +442,7 @@ item = bulk;       // 调用 operator=(const Quote&)
 
 一个派生类的函数如果覆盖了基类继承而来的虚函数，则形参和返回类型必须与被他覆盖的基类函数匹配。
 
-例外是：当类的虚函数返回类型是类本身的指针或引用时，上述规则无效。例如，D 由 B 派生得到，则基类的虚函数可以返回 B* 而派生类的对应函数可以返回 D*。这样的返回类型要求从 D 到 B 的类型转换是可访问的。
+例外是：当类的虚函数返回类型是类本身的指针或引用时，上述规则无效。例如，D 由 B 派生得到，则基类的虚函数可以返回 B* 而派生类的对应函数可以返回 D*。这样的返回类型要求从 D 到 B 的类型转换是可访问的。见 [15.8 容器和继承——隐藏指针](#隐藏指针)
 
 ### final 和 override 说明符
 
@@ -726,7 +731,7 @@ virtual ~Quote() = default;
 >
 >- 临时对象，当创建它的完整表达式结束时被销毁
 
-如果指针指向继承体系中的某个类型，可能出现指针的静态类型与被删除对象的动态类型不符的情况。例如：我们 delete 了一个 `Quote*` 类型的指针，但是该指针可能实际指向 `Bluk_quote` 类型的对象。此时编译器需要知道它应该执行 `Bulk_quote` 的析构函数。
+如果指针指向继承体系中的某个类型，可能出现指针的静态类型与被删除对象的动态类型不符的情况。例如：我们 delete 了一个 `Quote*` 类型的指针，但是该指针可能实际指向 `Bulk_quote` 类型的对象。此时编译器需要知道它应该执行 `Bulk_quote` 的析构函数。
 
 我们在基类中需要将析构函数定义成虚函数：
 
@@ -901,3 +906,158 @@ derived(params) : base(args) {}
 - 派生类可以继承一部分构造函数，其他构造函数使用自己的版本（自己定义的参数列表和派生类的相同的话）。
 
 - 默认、拷贝和移动构造函数不会被继承，这些构造函数按照正常规则被合成。
+
+## 15.8 容器和继承
+
+不能把具有继承关系的多种类型的对象直接存放在容器当中。当派生类对象被赋值给基类对象时，其中的派生类部分将被切掉。
+
+例如：
+
+```cpp
+vector<Quote> basket;
+
+basket.push_back(Quote("cppprimer", 50));  // 正常拷贝
+basket.push_back(Bulk_quote("algorithms", 50, 10, 0.2)); // 只拷贝对象的 Quote 部分，切掉 Bulk_quote 的部分
+```
+
+### 在容器中放置智能指针而非对象
+
+如果我们希望在容器中存放具有继承关系的对象时，需要存放基类的指针（智能指针）。这些指针所指对象的动态类型可能是积累类型，也可能是派生类类型。
+
+```cpp
+vector<shared_ptr<Quote>> basket;
+
+basket.push_back(make_shared<Quote>("cppprimer", 50));
+basket.push_back(make_shared<Bulk_quote>("algorithms", 50, 10, 0.2)); // 将派生类的智能指针转换成基类的智能指针
+
+cout << basket.back()->net_price(15) << endl;
+```
+
+### 15.8.1 编写 Basket 类
+
+```cpp
+class Basket {
+public:
+    void add_item(const std::shared_ptr<Quote> &sale) {
+        items.insert(sale);
+    }
+
+    // 打印每本书的总价和 Basket 中所有书的总价
+    double total_receipt(std::ostream&) const;
+
+private:
+    static bool compare(const std::shared_ptr<Quote> &lhs,
+                        const std::shared_ptr<Quote> &rhs) {
+                            return lhs->isbn() < rhs->isbn();
+                        }
+    
+    // 传递 compare 参数的时候不可使用花括号，
+    // 否则 items 会被当成函数
+    // std::multiset<std::shared_ptr<Quote>, decltype(compare)*> items(compare); error
+    std::multiset<std::shared_ptr<Quote>, decltype(compare)*> items{compare};
+};
+```
+
+- 使用 multiset 来存放交易信息，能够保存一本书的多条交易记录。
+
+- 因为 multiset 的元素是 shared_ptr，我们为其定义小于运算符，用该小与运算符初始化 items。
+
+#### 定义 Basket 的成员
+
+定义 `total_receipt` 函数打印每本书的总价和所有书的总价：
+
+```cpp
+double Basket::total_receipt(std::ostream &os) const {
+    double sum = 0;
+    for (auto iter = items.cbegin(); iter != items.cend(); iter = items.upper_bound(*iter)) {
+        sum += print_total(os, **iter, items.count(*iter));
+    }
+    os << "total sale : " << sum << std::endl;
+
+    return sum;
+}
+```
+
+- for 循环中，执行完本次循环直接通过 `upper_bound` 方法跳到下一个 `isbn()` 与当前不同的位置。
+
+- print_total 方法中，iter 为迭代器，*iter 为 shared_ptr 指针，**iter 为指针指向的对象。
+
+#### 隐藏指针
+
+当前 Basket 的 add_item 成员需要接受一个 shared_ptr 参数。
+
+```cpp
+void add_item(const std::shared_ptr<Quote> &sale) {
+    items.insert(sale);
+}
+```
+
+用户需要通过 `make_shared` 来传递参数：
+
+```cpp
+basket.add_item(make_shared<Quote>("cppprimer", 5));
+basket.add_item(make_shared<Bulk_quote>("algorithms", 99.5, 10, 0.2));
+```
+
+若将 add_item 函数改写为如下的形式，则只需要接受 Quote 对象：
+
+```cpp
+void add_item(const Quote &sale);
+void add_item(Quote &&sale);
+```
+
+由于绑定到 sale 的可能是 Quote 或者 Bulk_quote，需要让 add_item 知道分配的类型从而正常内存。
+
+为了解决上述问题，给 Quote 类添加一个虚函数 `clone`，用来申请一份当前对象的拷贝：
+
+```cpp
+class Quote {
+public:
+    virtual Quote* clone() const & {
+        return new Quote(*this);
+    }
+
+    virtual Quote* clone() && {
+        return new Quote(std::move(*this));
+    }
+};
+```
+
+在 [Bulk_quote](https://github.com/piaoliangkb/cppprimer/blob/master/chapter15/Bulk_quote_derived_from_Quote.h#L53) 类中改写该虚函数：
+
+```cpp
+class Bulk_quote {
+public:
+    Bulk_quote* clone() const & override {
+        return new Bulk_quote(*this);
+    }
+
+    Bulk_quote* clone() && override {
+        return new Bulk_quote(std::move(*this));
+    }
+}
+```
+
+分别定义 `clone` 函数的左值和右值版本：
+
+- const 左值引用成员将他自己拷贝给新分配的对象
+
+- 右值引用将他自己移动到新数据中
+
+所以新的 add_item 函数如下：
+
+```cpp
+class Basket {
+public:
+    void add_item(const Quote &sale) {
+        items.insert(std::shared_ptr<Quote>(sale.clone()));
+    }
+    void add_item(Quote &&sale) {
+        items.insert(std::shared_ptr<Quote>(std::move(sale).clone()));
+    }
+}
+```
+
+由于 clone 函数是一个虚函数，所以 sale 的动态类型决定了运行 Quote 的函数还是 Bulk_quote 的函数。
+
+>虚函数 clone 的返回对象在基类和派生类中不一样，和 [派生类中的虚函数](#派生类中的虚函数) 所述相符。

@@ -53,6 +53,8 @@
 - [std::allocator<T> 类型对象拷贝](#stdallocatort-类型对象拷贝)
 - [一个简单的 string 类的实现](#一个简单的-string-类的实现)
 - [派生类的析构函数只负责销毁自己的成员](#派生类的析构函数只负责销毁自己的成员)
+- [派生类只能在初始值列表中使用基类的构造函数](#派生类只能在初始值列表中使用基类的构造函数)
+- [类成员的初始化只能使用等号或者花括号，不能用圆括号](#类成员的初始化只能使用等号或者花括号不能用圆括号)
 
 <!-- /TOC -->
 --------------------------------
@@ -710,3 +712,77 @@ https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/String.h
 - 派生类赋值运算符必须为其基类部分的成员赋值。
 
 - 析构函数只负责销毁派生类自己分配的资源，派生类对象的基类部分是自动销毁的。
+
+## 派生类只能在初始值列表中使用基类的构造函数
+
+>p555
+
+若要使用拷贝或者移动构造函数，我们必须在构造函数的初始值列表中，显式地调用该构造函数。
+
+```cpp
+Bulk_quote(const Bulk_quote &rhs)
+    : Quote(rhs), quantity(rhs.quantity), discount(rhs.discount) 
+{
+    // Quote(rhs); error
+    quantity = rhs.quantity;
+    discount = rhs.discount;
+    std::cout << "[call func] Bulk_quote(const Bulk_quote&)" << std::endl;
+}
+```
+
+## 类成员的初始化只能使用等号或者花括号，不能用圆括号
+
+>chapter15.8.1 编写 Basket 类
+>
+>https://www.zhihu.com/question/267652570/answer/327087344
+>
+>[most vexing parse](https://en.wikipedia.org/wiki/Most_vexing_parse)
+
+
+代码如下：
+
+```cpp
+class Basket {
+public:
+    void add_item(const std::shared_ptr<Quote> &sale) {
+        items.insert(sale);
+    }
+
+    // 打印每本书的总价和 Basket 中所有书的总价
+    double total_receipt(std::ostream&) const;
+
+private:
+    static bool compare(const std::shared_ptr<Quote> &lhs,
+                        const std::shared_ptr<Quote> &rhs) {
+                            return lhs->isbn() < rhs->isbn();
+                        }
+    
+    // 传递 compare 参数的时候不可使用花括号，
+    // 否则 items 会被当成函数
+    // std::multiset<std::shared_ptr<Quote>, decltype(compare)*> items(compare); error
+    std::multiset<std::shared_ptr<Quote>, decltype(compare)*> items{compare};
+};
+```
+
+其中 items 的声明若写为 `std::multiset<std::shared_ptr<Quote>, decltype(compare)*> items(compare);` 则会报错，items 会被认为是一个函数。
+ 
+同理：
+
+```cpp
+struct A {
+    static const int x(0);
+};
+```
+
+上述写法 x 会被当成一个函数。只能写成 `static const int x = 0;` 或者 `static const int x{0};`
+
+- 在类外，初始化可以使用圆括号，例如 `chapter11.2.2`：
+
+```cpp
+bool compareISBN(const Sales_data& lhs, const Sales_data& rhs)
+{
+    return lhs.isbn() < rhs.isbn();
+}
+
+multiset<Sales_data, decltype(compareISBN)*> bookstore(compareISBN);
+```
