@@ -10,7 +10,7 @@ class WordQuery : public Query_base {
 
 private:
     WordQuery(const std::string &s) : query_word(s) {
-        std::cout << "WordQuery::WordQuery(const std::string&)" << std::endl;
+        // std::cout << "WordQuery::WordQuery(const std::string&)" << std::endl;
     }
 
     QueryResult eval(const TextQuery &t) const override {
@@ -18,7 +18,7 @@ private:
     }
 
     std::string rep() const override {
-        std::cout << "WordQuery::rep()" << std::endl;
+        // std::cout << "WordQuery::rep()" << std::endl;
 
         return query_word;
     }

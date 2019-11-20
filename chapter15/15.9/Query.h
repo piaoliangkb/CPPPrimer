@@ -18,13 +18,13 @@ class Query {
 public:
     // 创建一个新的 WordQuery 的构造函数
     Query(const std::string &s) : q(new WordQuery(s)) {
-        std::cout << "Query::Query(const std::string&)" << std::endl;
+        // std::cout << "Query::Query(const std::string&)" << std::endl;
     }
 
     QueryResult eval(const TextQuery &t) const { return q->eval(t); }
 
     std::string rep() const {
-        std::cout << "Query::rep()" << std::endl;
+        // std::cout << "Query::rep()" << std::endl;
 
         return q->rep();
     }
@@ -32,7 +32,7 @@ public:
 private:
     // 构造函数
     Query(std::shared_ptr<Query_base> query) : q(query) {
-        std::cout << "Query::Query(std::shared_ptr<Query_base>)" << std::endl;
+        // std::cout << "Query::Query(std::shared_ptr<Query_base>)" << std::endl;
     }
 
     std::shared_ptr<Query_base> q;

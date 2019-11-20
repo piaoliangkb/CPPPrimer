@@ -72,7 +72,7 @@
         - [15.9.2 Query_base 和 Query 类](#1592-query_base-和-query-类)
             - [Query_base 类](#query_base-类)
             - [Query 类](#query-类)
-            - [Query 类的输出运算符](#query-类的输出运算符)
+            - [Query 类的输出运算符(? 什么意思)](#query-类的输出运算符-什么意思)
             - [练习15.32 Query 类型的对象被拷贝移动赋值销毁发生什么](#练习1532-query-类型的对象被拷贝移动赋值销毁发生什么)
             - [练习15.33 Query_base 类的对象被拷贝移动赋值销毁发生什么](#练习1533-query_base-类的对象被拷贝移动赋值销毁发生什么)
         - [15.9.3 派生类](#1593-派生类)
@@ -81,6 +81,10 @@
             - [BinaryQuery 类](#binaryquery-类)
             - [AndQuery OrQuery 类和相应的运算符](#andquery-orquery-类和相应的运算符)
             - [练习15.34](#练习1534)
+        - [19.5.4 eval 函数](#1954-eval-函数)
+            - [OrQuery::eval](#orqueryeval)
+            - [AndQuery::eval](#andqueryeval)
+            - [NotQuery::eval](#notqueryeval)
 
 <!-- /TOC -->
 
@@ -1194,7 +1198,10 @@ private:
 
 - eval 和 rep 公有成员实际调用的函数版本将由 q 所指向的对象类型在运行时决定。
 
-#### Query 类的输出运算符
+>我们的查询对象使用 Query 来表示，对查询对象调用 eval 函数，相当于调用 Query 的成员：指向 Query_base 的指针的 eval 函数。
+>eval 是一个虚函数，所以根据绑定到 Query_base 的派生类的类型，进行不同的函数调用。
+
+#### Query 类的输出运算符(? 什么意思)
 
 ```cpp
 std::ostream &operator<<(std::ostream &os, const Query &query) {
@@ -1387,11 +1394,11 @@ OrQuery::OrQuery(const Query&, const Query&)
 Query::Query(std::shared_ptr<Query_base>)
 ```
 
-b. cout << q 所调用的 rep
+b. cout << q 所调用的 rep (?)
 
 ```cpp
 Query::rep()
-BinaryQuery::rep() 
+BinaryQuery::rep()   
 Query::rep()
 BinaryQuery::rep() 
 Query::rep()
@@ -1407,4 +1414,73 @@ c. q.eval() 所调用的 eval
 
 ```cpp
 OrQuery::eval()
+```
+
+### 19.5.4 eval 函数
+
+>我们的查询对象使用 Query 来表示，对查询对象调用 eval 函数，相当于调用 Query 的成员：指向 Query_base 的指针的 eval 函数。
+>eval 是一个虚函数，所以根据绑定到 Query_base 的派生类的类型，进行不同的函数调用。
+
+#### OrQuery::eval
+
+```cpp
+QueryResult OrQuery::eval(const TextQuery& text) const {
+    // Query.eval 调用 Query_base 中定义的虚函数 eval
+    // 返回每个运算对象的 QueryResult
+    auto right = rhs.eval(text), left = lhs.eval(text);
+    
+    // 左侧运算对象的行号拷贝到一个新的 set<int> 内
+    auto ret_lines = std::make_shared<set<int>>(left.begin(), left.end());
+
+    // 右侧运算对象的行号插入
+    ret_lines->insert(right.begin(), right.end());
+
+    return QueryResult(left.getfile(), ret_lines, rep());
+}
+```
+
+#### AndQuery::eval
+
+```cpp
+QueryResult AndQuery::eval(const TextQuery &text) const {
+    auto right = rhs.eval(text), left = lhs.eval(text);
+
+    auto ret_lines = std::make_shared<set<int>>();
+
+    // inserter 使用 insert 的迭代器，
+    // 第二个参数为指向给定容器的迭代器，插入到给定迭代器之前。
+    // set_intersection 将两个输入序列相同的内容写入到目标位置
+    std::set_intersection(left.begin(), left.end(), right.begin(), right.end(),
+                          inserter(*ret_lines, ret_lines->begin()));
+
+    return QueryResult(left.getfile(), ret_lines, rep());
+}
+```
+
+#### NotQuery::eval
+
+```cpp
+QueryResult NotQuery::eval(const TextQuery &text) const {
+    auto ret = query.eval(text);
+
+    auto ret_lines = std::make_shared<set<int>>();
+
+    auto beg = ret.begin(), end = ret.end(); // 遍历 set 的行号按照升序排列
+    auto sz = ret.getfile()->size();
+
+    // 例如 ret{2, 3}
+    // 总行数  {0, 1, 2, 3, 4, 5}
+    for (size_t n = 0; n < sz; ++n) {
+        // 如果 ret 已经结束，则上边的 if 条件永远为真，将所有剩余行添加
+        // 若 ret 未结束，看当前行号和 *beg 是否相等
+        // 如果不等，就添加进结果集合
+        // 若相等，则递增 beg ，检查集合中的下一个元素和下一个行号
+        if (beg == end || n != *beg)
+            ret_lines->insert(n);
+        else 
+            ++beg;
+    }
+
+    return QueryResult(ret.getfile(), ret_lines, rep());
+}
 ```
