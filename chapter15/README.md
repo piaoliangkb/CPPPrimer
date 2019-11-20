@@ -65,6 +65,22 @@
         - [15.8.1 编写 Basket 类](#1581-编写-basket-类)
             - [定义 Basket 的成员](#定义-basket-的成员)
             - [隐藏指针](#隐藏指针)
+    - [15.9 文本查询程序](#159-文本查询程序)
+        - [15.9.1 面向对象的解决方法](#1591-面向对象的解决方法)
+            - [抽象基类](#抽象基类)
+            - [将层次关系隐藏于接口类中](#将层次关系隐藏于接口类中)
+        - [15.9.2 Query_base 和 Query 类](#1592-query_base-和-query-类)
+            - [Query_base 类](#query_base-类)
+            - [Query 类](#query-类)
+            - [Query 类的输出运算符](#query-类的输出运算符)
+            - [练习15.32 Query 类型的对象被拷贝移动赋值销毁发生什么](#练习1532-query-类型的对象被拷贝移动赋值销毁发生什么)
+            - [练习15.33 Query_base 类的对象被拷贝移动赋值销毁发生什么](#练习1533-query_base-类的对象被拷贝移动赋值销毁发生什么)
+        - [15.9.3 派生类](#1593-派生类)
+            - [WordQuery 类](#wordquery-类)
+            - [NotQuery 类和 ~ 运算符](#notquery-类和--运算符)
+            - [BinaryQuery 类](#binaryquery-类)
+            - [AndQuery OrQuery 类和相应的运算符](#andquery-orquery-类和相应的运算符)
+            - [练习15.34](#练习1534)
 
 <!-- /TOC -->
 
@@ -1061,3 +1077,334 @@ public:
 由于 clone 函数是一个虚函数，所以 sale 的动态类型决定了运行 Quote 的函数还是 Bulk_quote 的函数。
 
 >虚函数 clone 的返回对象在基类和派生类中不一样，和 [派生类中的虚函数](#派生类中的虚函数) 所述相符。
+
+## 15.9 文本查询程序
+
+### 15.9.1 面向对象的解决方法
+
+> 当我们令一个类公有地继承另一个类时，派生类应当反映与基类的 `is a` 关系。在设计良好的类中，公有派生类的对象应该可以用在任何需要基类对象的地方。
+
+为了让文本查询程序支持不同的查询方式，定义如下的类：
+
+- `WordQuery` 普通查询
+
+- `NotQuery` ~查询
+
+- `OrQuery` |查询
+
+- `AndQuery` &查询
+
+#### 抽象基类
+
+上述提到的四种查询方式互为兄弟，不构成继承关系，所以需要定义一个抽象基类 `Query_base`.
+
+- `WordQuery` `NotQuery` 可以直接继承于 `Query_base`.
+
+- `OrQuery` `AndQuery` 是二元查询，所以我们定义一个名为 `BinaryQuery` 的抽象基类，让这两个类继承于 `BinaryQuery`.
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g94jpukvudj20jc0a73zi.jpg)
+
+#### 将层次关系隐藏于接口类中
+
+例如对于如下的查询表达式：
+
+```cpp
+Query q = Query("fiery") & Query("bird") | Query("wind");
+```
+
+用户通过 Query 对象的操作间接地创建并处理 Query_base 对象。需要定义 Query 对象的三个重载运算符和一个构造函数：
+
+- & 运算符生成一个绑定到一个新的 AndQuery 对象上的 Query 对象。
+
+- | 运算符生成一个绑定到新的 OrQuery 对象上的 Query 对象。
+
+- ~ 运算符生成一个绑定到新的 NotQuery 对象上的 Query 对象。
+
+- 构造函数生成一个新的 WordQuery 对象。
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g94jxw9lsgj20km0b8wg5.jpg)
+
+### 15.9.2 Query_base 和 Query 类
+
+#### Query_base 类
+
+```cpp
+class Query_base {
+    friend class Query;
+
+protected:
+
+    // in my program, this is type:int in TextQuery.h
+    // such like : map<string, shared_ptr<set<int>>> word2line;
+    using line_no = TextQuery::line_num;
+
+    virtual ~Query_base() = default;
+
+private:
+
+    // eval 返回与当前 Query 匹配的 QueryResult
+    virtual QueryResult eval(const TextQuery&) const = 0;
+
+    // rep 表示查询的一个 string
+    virtual std::string rep() const = 0;
+};
+```
+
+- Query_base 是一个抽象基类，我们将 `eval` 和 `rep` 函数定义为纯虚函数。且我们不希望用户或者派生类直接使用 Query_base，所以它没有公有成员。
+
+- 所有对 Query_base 的使用都要经过 Query 对象，所以将 Query 对象声明为 Query_base 的友元。
+
+- line_no 成员将在 eval 函数中使用。
+
+- 析构函数是受保护的，它将隐式的在派生类析构函数中使用。
+
+#### Query 类
+
+设计 Query 类的目的是对外提供接口，同时隐藏 Query_base 的继承体系。
+
+- 每个 Query 对象都含有一个指向 Query_base 对象的 shared_ptr。
+
+- Query 是 Query_base 的唯一接口，所以 Query 必须定义自己的 eval 和 rep 版本。
+
+```cpp
+class Query {
+
+    friend Query operator~(const Query&);
+    friend Query operator|(const Query&, const Query&);
+    friend Query operator&(const Query&, const Query&);
+
+public:
+    
+    // 创建一个新的 WordQuery 的构造函数
+    Query(const std::string&);
+
+    QueryResult eval(const TextQuery &t) const { return q->eval(t); }
+
+    std::string rep() const { return q->rep(); }
+
+private:
+    Query(std::shared_ptr<Query_base> query) : q(query) {}
+    std::shared_ptr<Query_base> q;
+};
+```
+
+- 接受 string 的构造函数创建一个新的 WordQuery 对象，然后将 Query 类的 shared_ptr 成员绑定到这个 WordQuery 对象上。
+
+- ~ | & 运算符分别创建 AndQuery, OrQuery, NotQuery 对象，这些运算符返回一个绑定到新创建对象上的 Query 对象。将这些运算符声明为友元的原因是他们需要访问 Query 类的私有构造函数。声明构造函数为私有的原因是我们不想让普通用户代码定义 Query_base 对象。
+
+- eval 和 rep 公有成员实际调用的函数版本将由 q 所指向的对象类型在运行时决定。
+
+#### Query 类的输出运算符
+
+```cpp
+std::ostream &operator<<(std::ostream &os, const Query &query) {
+    return os << query.rep();
+}
+```
+
+当我们打印一个 Query 时，输出运算符使用 Query 类的公有 rep 成员：
+
+```cpp
+Query andq = Query(s1) & Query(s2);
+cout << andq << endl;  // 使用 AndQuery::rep()
+```
+
+#### 练习15.32 Query 类型的对象被拷贝移动赋值销毁发生什么
+
+1. 拷贝：合成的拷贝构造函数会增加 shared_ptr 成员的引用计数。
+
+2. 移动：合成的移动构造函数，新的对象的 shared_ptr 成员指向原位置，引用计数为1，原来的 shared_ptr 指向 nullptr。
+
+3. 赋值：拷贝和移动赋值和上述相同。
+
+4. 销毁：引用计数-1。如果引用计数变为0，shared_ptr 的析构函数会调用来删除指向地址的资源分配。
+
+#### 练习15.33 Query_base 类的对象被拷贝移动赋值销毁发生什么
+
+Query_base 是一个抽象基类，行为由其子类对应的实现决定。
+
+### 15.9.3 派生类
+
+- WordQuery 类的任务就是保存要查找的单词。
+
+NotQuery, AndQuery, OrQuery 类的运算对象必须以 Query_base 指针的形式存储，这样就能把该指针绑定到任何我们需要的具体类上。
+
+实际我们使用 Query 对象来保存 Query_base 的指针。
+
+#### WordQuery 类
+
+```cpp
+class WordQuery : public Query_base {
+
+    friend class Query; // 为了让 Query 类构造 WordQuery
+    
+private:
+    WordQuery(const std::string &s) : query_word(s) {}
+
+    QueryResult eval(const TextQuery &t) const {
+        return t.query(query_word);
+    }
+
+    std::string rep() const { return query_word; }
+
+    std::string query_word;
+};
+```
+
+- WordQuery 类的所有成员都是私有的，同 Query_base，我们不想让普通用户代码调用使用该类。
+
+- Query 必须作为 WordQuery 的友元，这样 Query 才能访问 WordQuery 的构造函数。
+
+#### NotQuery 类和 ~ 运算符
+
+```cpp
+class NotQuery : public Query_base {
+
+    friend Query operator~(const Query&); // 将运算符声明为友元以创建 NotQuery 对象
+
+private:
+
+    NotQuery(const Query &q) : query(q) {}
+
+    QueryResult eval(const TextQuery &) const override;
+
+    std::string rep() const override { return "~(" + query.rep() + ")"; }
+
+    Query query;
+};
+
+inline Query operator~(const Query &operand) {
+    return std::shared_ptr<Query_base>(new NotQuery(operand));
+}
+```
+
+- NotQuery 类的所有成员都是私有的，为了让 operator~ 运算符可以创建 NotQuery 对象，需要将运算符声明为该类的友元。
+
+- ~ 运算符分配一个新的 NotQuery 对象，其 return 语句 **隐式地使用接受一个 shared_ptr<Query_base> 的 Query 构造函数**，等价于：
+
+```cpp
+shared_ptr<Query)base> temp(new NotQuery(expr));
+return Query(temp);
+```
+
+#### BinaryQuery 类
+
+BinaryQuery 类是一个抽象基类，保存操作两个运算对象的查询类型所需的数据。
+
+```cpp
+class BinaryQuery : public Query_base {
+
+protected:
+    BinaryQuery(const Query &l, const Query &r, std::string s)
+        : lhs(l), rhs(r), opSym(s) {}
+
+    std::string rep() const {
+        return "(" + lhs.rep() + " " + opSym + " " + rhs.rep() + ")";
+    }
+
+    Query lhs, rhs;
+    std::string opSym;
+};
+```
+
+- 成员是左右两侧的运算对象和运算符号。
+
+- BinaryQuery 没有定义 eval，而是 **继承了该纯虚函数**，所以 BinaryQuery 也是一个抽象基类。我们不能创建该类的对象。
+
+#### AndQuery OrQuery 类和相应的运算符
+
+```cpp
+class AndQuery : public BinaryQuery {
+    friend Query operator&(const Query&, const Query&);
+
+private:
+    
+    AndQuery(const Query &left, const Query &right)
+        : BinaryQuery(left, right, "&") {}
+    
+    QueryResult eval(const TextQuery&) const override;
+
+};
+
+inline Query operator&(const Query &lhs, const Query &rhs) {
+    return std::shared_ptr<Query_base>(new AndQuery(lhs, rhs));
+}
+```
+
+```cpp
+class OrQuery : public BinaryQuery {
+    friend Query operator|(const Query&, const Query&);
+
+private:
+    
+    OrQuery(const Query &left, const Query &right)
+        : BinaryQuery(left, right, "|") {}
+    
+    QueryResult eval(const TextQuery&) const override;
+
+};
+
+inline Query operator|(const Query &lhs, const Query &rhs) {
+    return std::shared_ptr<Query_base>(new OrQuery(lhs, rhs));
+}
+```
+
+- 将各自的运算符定义成友元。
+
+- 各自定义了一个构造函数，通过运算符创建 BinaryQuery基类部分。
+
+- 继承 BinaryQuery 的 rep 函数但是覆盖 eval 函数。
+
+- 返回值都是绑定到新分配对象上的 shared_ptr。return 语句负责将 shared_ptr 转换成 Query。
+
+#### 练习15.34
+
+![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g94jxw9lsgj20km0b8wg5.jpg)
+
+a. 列出处理表达式过程中执行的所有构造函数：
+
+```cpp
+Query("fiery") -> Query(const std::string&) -> WordQuery(const std::string&) 
+
+Query("fiery") & Query("bird") -> AndQuery(const Query&, const Query&) -> BinaryQuery(const Query&, const Query&)
+
+(Query("fiery") & Query("bird")) | Query("wind") -> OrQuery(const Query&, const Query&) -> BinaryQuery(const Query&, const Query&)
+
+// -------------------------------------------------//
+// 实际执行的 //
+// -------------------------------------------------//
+WordQuery::WordQuery(const std::string&)
+Query::Query(const std::string&)
+WordQuery::WordQuery(const std::string&)
+Query::Query(const std::string&)
+BinaryQuery::BinaryQuery(const Query&, const Query&, std::string)
+AndQuery::AndQuery(const Query&, const Query&)
+Query::Query(std::shared_ptr<Query_base>)
+WordQuery::WordQuery(const std::string&)
+Query::Query(const std::string&)
+BinaryQuery::BinaryQuery(const Query&, const Query&, std::string)
+OrQuery::OrQuery(const Query&, const Query&)
+Query::Query(std::shared_ptr<Query_base>)
+```
+
+b. cout << q 所调用的 rep
+
+```cpp
+Query::rep()
+BinaryQuery::rep() 
+Query::rep()
+BinaryQuery::rep() 
+Query::rep()
+WordQuery::rep()
+Query::rep()
+WordQuery::rep()
+Query::rep()
+WordQuery::rep()
+((fiery & bird) | wind)
+```
+
+c. q.eval() 所调用的 eval
+
+```cpp
+OrQuery::eval()
+```
