@@ -72,7 +72,7 @@
         - [15.9.2 Query_base 和 Query 类](#1592-query_base-和-query-类)
             - [Query_base 类](#query_base-类)
             - [Query 类](#query-类)
-            - [Query 类的输出运算符(? 什么意思)](#query-类的输出运算符-什么意思)
+            - [Query 类的输出运算符](#query-类的输出运算符)
             - [练习15.32 Query 类型的对象被拷贝移动赋值销毁发生什么](#练习1532-query-类型的对象被拷贝移动赋值销毁发生什么)
             - [练习15.33 Query_base 类的对象被拷贝移动赋值销毁发生什么](#练习1533-query_base-类的对象被拷贝移动赋值销毁发生什么)
         - [15.9.3 派生类](#1593-派生类)
@@ -1201,7 +1201,7 @@ private:
 >我们的查询对象使用 Query 来表示，对查询对象调用 eval 函数，相当于调用 Query 的成员：指向 Query_base 的指针的 eval 函数。
 >eval 是一个虚函数，所以根据绑定到 Query_base 的派生类的类型，进行不同的函数调用。
 
-#### Query 类的输出运算符(? 什么意思)
+#### Query 类的输出运算符
 
 ```cpp
 std::ostream &operator<<(std::ostream &os, const Query &query) {
@@ -1209,7 +1209,7 @@ std::ostream &operator<<(std::ostream &os, const Query &query) {
 }
 ```
 
-当我们打印一个 Query 时，输出运算符使用 Query 类的公有 rep 成员：
+当我们打印一个 Query 时，输出运算符使用 Query 类的公有 rep 成员，并返回输出运算符的引用：
 
 ```cpp
 Query andq = Query(s1) & Query(s2);

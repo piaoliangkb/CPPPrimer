@@ -55,6 +55,7 @@
 - [派生类的析构函数只负责销毁自己的成员](#派生类的析构函数只负责销毁自己的成员)
 - [派生类只能在初始值列表中使用基类的构造函数](#派生类只能在初始值列表中使用基类的构造函数)
 - [类成员的初始化只能使用等号或者花括号，不能用圆括号](#类成员的初始化只能使用等号或者花括号不能用圆括号)
+- [多态(polymorphism)](#多态polymorphism)
 
 <!-- /TOC -->
 --------------------------------
@@ -786,3 +787,25 @@ bool compareISBN(const Sales_data& lhs, const Sales_data& rhs)
 
 multiset<Sales_data, decltype(compareISBN)*> bookstore(compareISBN);
 ```
+
+## 多态(polymorphism)
+
+>[c++ primer 15.3 虚函数](https://github.com/piaoliangkb/cppprimer/tree/master/chapter15#%E5%A4%9A%E6%80%81-polymorphism)
+>
+>https://zhuanlan.zhihu.com/p/37340242
+>
+>https://en.wikipedia.org/wiki/Polymorphism_(computer_science)
+
+在编程语言和类型论中，多态（英语：polymorphism）指为不同数据类型的实体提供统一的接口。
+
+>多态可分为变量多态与函数多态。
+>
+>- 变量多态是指：基类型的变量（对于C++是引用或指针）可以被赋值基类型对象，也可以被赋值派生类型的对象。
+>
+>- 函数多态是指，相同的函数调用界面（函数名与实参表），传送给一个对象变量，可以有不同的行为，这视该对象变量所指向的对象类型而定。因此，变量多态是函数多态的基础。
+
+C++ 中的多态包括 overload（重载，函数重载） 和 override（重写）。
+
+- overload，也可以看做静态多态(static polymorphism)、编译时多态，通过重载函数实现，具体调用函数在编译器决定。
+
+- override，也可以看作动态多态(dynamic polymorphism)、运行时多态，通过类的虚函数实现，子类重写父类的虚函数，在程序运行过程中动态地决定调用哪个函数。
