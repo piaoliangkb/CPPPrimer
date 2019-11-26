@@ -56,6 +56,7 @@
 - [派生类只能在初始值列表中使用基类的构造函数](#派生类只能在初始值列表中使用基类的构造函数)
 - [类成员的初始化只能使用等号或者花括号，不能用圆括号](#类成员的初始化只能使用等号或者花括号不能用圆括号)
 - [多态(polymorphism)](#多态polymorphism)
+- [extern 和 static](#extern-和-static)
 
 <!-- /TOC -->
 --------------------------------
@@ -809,3 +810,35 @@ C++ 中的多态包括 overload（重载，函数重载） 和 override（重写
 - overload，也可以看做静态多态(static polymorphism)、编译时多态，通过重载函数实现，具体调用函数在编译器决定。
 
 - override，也可以看作动态多态(dynamic polymorphism)、运行时多态，通过类的虚函数实现，子类重写父类的虚函数，在程序运行过程中动态地决定调用哪个函数。
+
+## extern 和 static
+
+>https://www.zhihu.com/question/265415085/answer/293495989
+>
+>推荐使用 namespace?
+
+- static
+
+static 修饰的变量只存在于当前编译单元。
+
+若 `static int a;` 写在一个头文件中，需要文件都包含了该头文件，那么每个文件都可以使用 `a`，但是每个 `a` 都是独立存在的，需要独立定义。
+
+- extern
+
+extern 修饰的变量存在，但是可能不在当前的编译单元，在链接的时候寻找定义。
+
+包含 extern 声明的头文件的，共用这个全局变量。
+
+例如：`extern int a; `如果在连接的时候，没有在任何地方发现 `a` 的定义，那么链接报错。
+
+例子：
+
+[static_and_extern.h](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/static_and_extern.h)
+
+[sae_test1.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test1.cpp)
+
+[sae_test2.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test2.cpp)
+
+[sae_test3.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test3.cpp)
+
+[sae_test4.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test4.cpp)
