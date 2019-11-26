@@ -8,7 +8,7 @@
         - [使用 inline 代替 #define 函数](#使用-inline-代替-define-函数)
     - [03: Use const whenever possible](#03-use-const-whenever-possible)
         - [const 成员函数](#const-成员函数)
-    - [Make sure that objects are initialized before they're used](#make-sure-that-objects-are-initialized-before-theyre-used)
+    - [04: Make sure that objects are initialized before they're used](#04-make-sure-that-objects-are-initialized-before-theyre-used)
         - [使用构造函数初始化列表](#使用构造函数初始化列表)
         - [non-local static 对象在不同编译单元的初始化顺序](#non-local-static-对象在不同编译单元的初始化顺序)
 
@@ -267,7 +267,7 @@ private:
 
 3. 使用 const_cast 将 const char & 转换为 char &.
 
-## Make sure that objects are initialized before they're used
+## 04: Make sure that objects are initialized before they're used
 
 >确定对象被使用前已被初始化
 
