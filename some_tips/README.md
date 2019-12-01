@@ -57,6 +57,7 @@
 - [类成员的初始化只能使用等号或者花括号，不能用圆括号](#类成员的初始化只能使用等号或者花括号不能用圆括号)
 - [多态(polymorphism)](#多态polymorphism)
 - [extern 和 static](#extern-和-static)
+- [RTTI(Run-Time Type Identification) and typeid](#rttirun-time-type-identification-and-typeid)
 
 <!-- /TOC -->
 --------------------------------
@@ -842,3 +843,47 @@ extern 修饰的变量存在，但是可能不在当前的编译单元，在链�
 [sae_test3.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test3.cpp)
 
 [sae_test4.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test4.cpp)
+
+## RTTI(Run-Time Type Identification) and typeid
+
+C++ 提供了运行时类型识别(RTTI)，可以通过 `typeid` 操作符的得到动态的类型信息：
+
+```cpp
+class Book {
+public:
+    Book() {
+    }
+    virtual void func() {
+        std::cout << "Book::func()" << std::endl;
+    }
+};
+
+class Cppprimer : public Book {
+public:
+    Cppprimer() {
+    }
+    void func() override {
+        std::cout << "Cppprimer::func()" << std::endl;
+    }
+};
+
+int main()
+{
+    Cppprimer cpp;
+    Book& bk = cpp;
+
+    bk.func();
+    std::cout << typeid(bk).name() << std::endl;  // Cppprimer
+
+    Book* bk1 = &cpp;
+
+    bk1->func();
+    std::cout << typeid(*bk1).name() << std::endl; // Book
+}
+/*
+Cppprimer::func()
+9Cppprimer
+Cppprimer::func()
+9Cppprimer
+*/
+```

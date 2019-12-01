@@ -405,6 +405,10 @@ int ival = 1024;
 int &refval = ival; // refval 指向 ival，是ival的另一个名字
 ```
 
+>effective c++: item 06: 引用初始化之后不能改变对象
+>
+>https://zh.cppreference.com/w/cpp/language/reference_initialization
+
 ### 2.3.2 指针
 
 指针(pointer)是指向另一种类型的复合类型。
