@@ -1,0 +1,282 @@
+
+<!-- TOC -->
+
+- [Designs and Declarations](#designs-and-declarations)
+    - [18: Make interfaces easy to use correctly and hard to use incorrectly](#18-make-interfaces-easy-to-use-correctly-and-hard-to-use-incorrectly)
+        - [例子 class Date](#例子-class-date)
+        - [others](#others)
+    - [19: Treat class design as type design](#19-treat-class-design-as-type-design)
+    - [20: Prefer pass-by-reference-to-const to pass-by-value](#20-prefer-pass-by-reference-to-const-to-pass-by-value)
+        - [pass-by-reference-to-const 和 pass-by-value 的选择](#pass-by-reference-to-const-和-pass-by-value-的选择)
+    - [21: Donot try to return a reference when you must return an object](#21-donot-try-to-return-a-reference-when-you-must-return-an-object)
+    - [22: Declare data members private](#22-declare-data-members-private)
+    - [23: Perfer non-member non-friend functions to member functions](#23-perfer-non-member-non-friend-functions-to-member-functions)
+    - [24: Declare non-member functions when type conversions should apply to all parameters](#24-declare-non-member-functions-when-type-conversions-should-apply-to-all-parameters)
+    - [25:](#25)
+
+<!-- /TOC -->
+
+# Designs and Declarations
+
+## 18: Make interfaces easy to use correctly and hard to use incorrectly
+
+>让接口容易被正确使用，不易被误用
+
+理想情况下，若使用了某个接口的代码能够被成功编译，就表示接口做了我们想做的事情，否则不应该让它成功编译。
+
+### 例子 class Date
+
+对于一个表示时间日期的接口，初始设计可以表示为：
+
+```cpp
+class Data {
+public:
+    Date(int month, int day, int year);
+}
+```
+
+对于这种接口，可能发生的问题为：
+
+```cpp
+Date d(30, 3, 1995);  // error,1995.30.3
+Date d(3, 30, 1996);  // true, 1996.3.30
+```
+
+换一种方式，将 Date 的初始化参数全部进行封装：
+
+```cpp
+class Day {
+public:
+    explicit Day(int d) : val(d) {}
+private:
+    int val;
+};
+
+class Month {
+public:
+    explicit Month(int m) : val(m) {}
+private:
+    int val;
+};
+
+class Year {
+public:
+    explicit Year(int y) : val(y) {}
+private:
+    int val;
+};
+```
+
+此时，Date 类的初始化可以为：
+
+```cpp
+class Date {
+public:
+    Date(const Month &m, const Day &d, const Year &y);
+};
+```
+
+这种接口的使用方式为：
+
+```cpp
+Date d(Month(3), Day(30), Year(1995));  // true
+Date d(Day(30), Month(3), Year(1995));  // error
+```
+
+我们已知一年只有12个月份，我们可以限制接口的值。我们可以预先定义有效的 Months：
+
+```cpp
+class Month {
+public:
+    static Month Jan() { return Month(1); }
+    static Month Feb() { return Month(2); }
+    // ...
+    static Month Dec() { return Month(12); }
+private:
+    explicit Month(int m);
+};
+```
+
+>[non-local static 对象在不同编译单元的初始化顺序](https://github.com/piaoliangkb/cppprimer/blob/master/effective_cpp/1.%20Accutoming%20Yourself%20to%20C%2B%2B.md#non-local-static-%E5%AF%B9%E8%B1%A1%E5%9C%A8%E4%B8%8D%E5%90%8C%E7%BC%96%E8%AF%91%E5%8D%95%E5%85%83%E7%9A%84%E5%88%9D%E5%A7%8B%E5%8C%96%E9%A1%BA%E5%BA%8F)
+>
+>两个编译单元中包含两个 non-local static 对象，他们的初始化顺序不确定。所以我们将每个 non-local static 对象移动到它自己的函数中，在这个函数中，它被声明为 static 的。
+
+此时日期可以定义为：
+
+```cpp
+Date d(Month::Mar(), Day(30), Year(1995));
+```
+
+### others
+
+例如条款三：对 `operator*` 的返回值加上 `const` 来避免发生 `(a * b) = c;` 的情况。
+
+尽量令你的 types 的行为和内置 types 的行为一致。
+
+每个 STL 容器都有一个名为 size 的成员函数，用来表示当前容器内有多少对象。
+
+shared_ptr 会使用每个指针专属的删除器，来避免 **cross DLL-problem**：
+
+当一个对象在动态链接库中通过 new 创建，却在另一个动态链接库中被 delete 销毁。这会导致运行期错误。
+
+总结：
+
+- Good interfaces are easy to use correctly and hard to use incorrectly.
+
+- 保持接口的一致性（容器的 size 方法），且与内置类型的行为兼容。
+
+- 阻止误用的办法有：建立新类型，限制类型上的操作，束缚对象值，消除用户的资源管理责任。
+
+- shared_ptr 可以自定义删除器，可以防范一个对象在一个 DLL 被 new 却在另外一个 DLL 被 delete 发生的运行期间错误。
+
+## 19: Treat class design as type design
+
+>设计 class 犹如设计 type
+
+## 20: Prefer pass-by-reference-to-const to pass-by-value
+
+>宁愿以 ... 替换 ...
+
+```cpp
+bool validateStudent(Student s);
+```
+
+对于上述代码，参数的传递成本为：一次 Student 的拷贝构造函数被调用，一次 Student 的析构函数被调用。
+
+可以以 pass-by-reference-to-const 代替上述参数传递：
+
+```cpp
+bool validateStudent(const Student &s);
+```
+
+其中，const 声明是重要的：对值传递参数来说，函数不会对传递的 Student 参数做任何改变，只会改变它的副本。所以当传引用的时候需要声明为 const 来保证不会修改原参数。
+
+对于具有继承关系的类来说，若参数为 **基类类型（传值）**，传递了派生类类型的对象，派生类的部分将会被丢弃。若参数为 **基类类型的引用（传引用）**，则不会发生此 **对象切割(slicing)** 问题。
+
+### pass-by-reference-to-const 和 pass-by-value 的选择
+
+- reference 通常以指针实现，pass-by-reference 通常传递的是指针。
+
+所以对于内置类型的对象而言，通常使用 pass-by-value 的方式效率要高一些，这也包括：1. STL 的迭代器；2. 函数对象。
+
+>1. STL 的迭代器通常都很小（只有一个指针）（看下STL 源码剖析）
+>
+>2. [C++Primer 函数对象](https://github.com/piaoliangkb/cppprimer/tree/master/chapter14#148-%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8%E8%BF%90%E7%AE%97%E7%AC%A6)
+
+并不是所有小的 types 类型选择 pass-by-value 都合适。许多对象——包括大多数 STL 容器，内含的东西只比一个指针多一些，然而复制它们会复制指针所指的每一项东西。
+
+>[如何理解 C++ 中的深拷贝和浅拷贝？](https://www.zhihu.com/question/36370072)
+>
+>对于值语意的对象，在 x = y 完成复制之后，y 的状态改变不能影响到 x，这特性称为独立性（independence）。使用深拷贝的方式可以完全复制一个独立于原来的对象。C++ 提供的（模板）类大部分都是值语意的，如 std::basic_string, std::vector.
+
+总结：
+
+- 使用 pass-by-value 的类型：内置类型，STL迭代器，函数对象。
+
+## 21: Donot try to return a reference when you must return an object
+
+>必须返回对象时，别妄想返回其 reference
+
+函数返回 refernece 还是 object 需要选择。
+
+## 22: Declare data members private
+
+>将成员变量声明为 private
+
+只有 private 才有封装，其他都没有。
+
+- 成员变量的封装性与 “成员变量的内容改变时所破坏的代码数量” 成反比：
+
+对于 public 成员变量，如果取消了它，所有使用它的用户代码都会被破坏。
+
+对于 protected 成员变量，如果取消了它，所有使用它的派生类都会被破坏。
+
+即：public 和 peotected 同样没有封装性。
+
+## 23: Perfer non-member non-friend functions to member functions
+
+>宁以 ... 替换 ... 
+
+越多东西被封装，越少人可以看见它，我们就有更大的弹性去改变它。所以封装的好处是：让我们改变事物而只影响有限客户。
+
+对于一个 WebBrowser 类，定义了三种操作：
+
+```cpp
+class WebBrowser {
+public:
+    void clearCache() { 
+    }
+
+    void clearHistory() {
+    }
+
+    void removeCookies() {
+    }
+};
+```
+
+若用户向一下执行所有的动作，可以额外定义一个函数，此时，函数可以为成员函数，也可以为非成员函数，例如：
+
+- 成员函数
+
+```cpp
+class WebBrowser {
+public:
+    // ...
+    void clearAll() {
+        clearCache();
+        clearHistory();
+        removeCookies();
+    }
+};
+```
+
+- 非成员函数
+
+```cpp
+void clearAll(WebBrowser &wb) {
+    wb.clearCache();
+    wb.clearHistory();
+    wb.removeCookies();
+}
+```
+
+选择哪一个比较好呢？面向对象规则要求对象尽可能被封装，而成员函数 clearAll() 比非成员非友元函数 clearAll() 封装性更低。非成员非友元函数可能会让 WebBrowser 类有较大的包裹弹性(greater packaging flexibility)，较低的编译依赖度(fewer compilation dependencies)，增加 WebBrowser 的可延伸性(increase extensibility)。
+
+如果在一个 **成员函数(member function)** 和一个 **非成员非友元函数(non-member non-friend)**
+之间选择，且两个函数的功能相同，那么非成员非友元函数的封装性较大，不会增加能够访问类内 private 数据的函数数量。
+
+友元函数和成员函数对类成员的访问权力相同，两者的对类的封装性影响也相同。
+
+在 C++ 中一个比较自然的做法是让 clearAll() 函数成为一个非友元非成员函数，并和 WebBrowser 类位于相同的命名空间内。 可以将与书签相关的声明放入到一个头文件中，与 Cookies 相关的声明放入到另一个头文件中，来降低编译依赖性，让用户只依赖于他们使用的一小部分功能。但是头文件必须当作一个整体来定义：
+
+```cpp
+// ------ WebBrowserCookies.h ------
+namespace WebBrowserStuff {
+    void clearCookies(WebBrowser &wb) {}
+} 
+
+// ------ WebBrowserBookmarks.h ------
+namespace WebBrowserStuff {
+    void clearBookmarks(WebBrowser &wb) {}
+}
+
+// ------ WebBrowser.h ------
+namespace WebBrowserStuff {
+class WebBrowser {
+};
+}
+```
+
+## 24: Declare non-member functions when type conversions should apply to all parameters
+
+>若某个函数的所有参数都需要类型转换，那么将此函数声明为非成员函数
+
+例如，`operator+(const T &lhs, const T &rhs)`
+
+>[C++Primer chapter14.1 选择作为成员或非成员](https://github.com/piaoliangkb/cppprimer/blob/6478d124d6d0c71cf532394396f5874d67f3d350/chapter14/README.md#%E9%80%89%E6%8B%A9%E4%BD%9C%E4%B8%BA%E6%88%90%E5%91%98%E6%88%96%E8%80%85%E9%9D%9E%E6%88%90%E5%91%98)
+>
+>[C++Primer chapter14.3 算数和关系运算符](https://github.com/piaoliangkb/cppprimer/blob/6478d124d6d0c71cf532394396f5874d67f3d350/chapter14/README.md#143-%E7%AE%97%E6%95%B0%E5%92%8C%E5%85%B3%E7%B3%BB%E8%BF%90%E7%AE%97%E7%AC%A6)
+
+
+## 25: 
