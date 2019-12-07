@@ -934,4 +934,16 @@ struct Widget::impl {
 clang++ -std=c++11 User.cpp test_User.cpp
 ```
 
->留个位置之后继续。
+使用 pimpl 的优势：
+
+- 编译时间减少：只有实现部分的文件会重新编译，而不是修改类的 private 部分后重新编译整个文件。
+
+- 数据封装：可以轻易的将内部的技术实现细节隐藏。
+
+缺点：
+
+- 内存管理：和将 private 部分内置于类中对比，使用 pimpl 实现的类消耗的内存增加。
+
+- 维护成本：增添了一个类，使用时需要调用指针，使得维护工作变得复杂。
+
+- 继承：被隐藏的实现是 private 成员，无法被继承。（[C++Primer chapter 15.2.2 静态成员与继承](https://github.com/piaoliangkb/cppprimer/tree/master/chapter15#%E9%9D%99%E6%80%81%E6%88%90%E5%91%98%E4%B8%8E%E7%BB%A7%E6%89%BF)）
