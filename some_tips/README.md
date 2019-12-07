@@ -58,6 +58,7 @@
 - [多态(polymorphism)](#多态polymorphism)
 - [extern 和 static](#extern-和-static)
 - [RTTI(Run-Time Type Identification) and typeid](#rttirun-time-type-identification-and-typeid)
+- [pimpl idiom(pointer to implementation)](#pimpl-idiompointer-to-implementation)
 
 <!-- /TOC -->
 --------------------------------
@@ -887,3 +888,50 @@ Cppprimer::func()
 9Cppprimer
 */
 ```
+
+## pimpl idiom(pointer to implementation)
+
+>effective c++ item25, 28
+>
+>参考：https://en.cppreference.com/w/cpp/language/pimpl
+>
+>https://www.geeksforgeeks.org/pimpl-idiom-in-c-with-examples/
+
+pimpl 的全称为 pointer to implementation，即使用指针指向实现。含义就是将一个类的实现细节从类中移除，使用指针指向一个单独的类，在这个单独的类中实现原类的实现细节。
+
+- 可以用来减少编译依赖。
+
+>When changes are made to a header file, all sources including it needs to be recompiled. In large projects and libraries, it can cause build time issues due to the fact that even when a small change to the implementation is made everyone has to wait sometime until they compile their code. One way to solve this problem is by using the PImpl Idiom, which hides the implementation in the headers and includes an interface file which compiles instantly.
+
+当某个头文件改变，所有包含这个头文件的源码都需要重新编译。使用 pimpl idiom 可以将类的具体实现从头文件中隐藏，放到一个单独的类中，那么当该实现更改的时候只需要重新编译这个类。
+
+一个大体实现：
+
+```cpp
+// -------- Widget.h --------
+class Widget {
+public:
+    // ...
+private:
+    struct impl;  // 实现类的前置声明
+    std::unique_ptr<impl> pimpl;
+};
+
+// -------- Widget.cpp --------
+struct Widget::impl {
+    // ...
+};
+```
+
+例子：
+
+[User.h](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/User.h)
+[User.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/User.cpp)
+[test_User.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/test_User.cpp)
+
+```cpp
+// just compile cpp files
+clang++ -std=c++11 User.cpp test_User.cpp
+```
+
+>留个位置之后继续。
