@@ -1,6 +1,226 @@
+<!-- TOC -->
 
+- [第十九章 特殊工具与技术](#第十九章-特殊工具与技术)
+    - [19.2 运行时类型识别](#192-运行时类型识别)
+        - [19.2.1 dynamic_cast 运算符](#1921-dynamic_cast-运算符)
+            - [指针类型的 dynamic_cast](#指针类型的-dynamic_cast)
+            - [引用类型的 dynamic_cast](#引用类型的-dynamic_cast)
+        - [19.2.2 typeid 运算符](#1922-typeid-运算符)
+            - [使用 typeid 运算符](#使用-typeid-运算符)
+    - [19.3 枚举类型(enumeration)](#193-枚举类型enumeration)
+        - [枚举成员](#枚举成员)
+        - [枚举定义新的类型](#枚举定义新的类型)
+        - [指定 enum 的大小(c++11)](#指定-enum-的大小c11)
+        - [枚举类型的前置声明](#枚举类型的前置声明)
+        - [形参匹配与枚举类型](#形参匹配与枚举类型)
+
+<!-- /TOC -->
 
 # 第十九章 特殊工具与技术
+
+## 19.2 运行时类型识别
+
+**运行时类型识别(run-time type identification, RTTI)** 的功能由两个运算符实现：
+
+- typeid 运算符，用于返回表达式的类型。
+
+- dynamic_cast 运算符，用于将基类的指针或引用安全地转换成派生类的指针或引用。
+
+当我们把这两个运算符用于某种类型的指针或者引用，并且该类型含有虚函数时，运算符将使用指针或者引用所绑定对象的动态类型。
+
+**适用情况**：像使用基类对象的指针或者引用执行派生类的操作，且该操作不是虚函数。
+
+**一般来说应尽可能地使用虚函数**，当一个操作被定义成虚函数时，编译器将根据对象的动态类型自动地选择正确的函数版本。若无法使用虚函数，则可以使用本节提到的 RTTI 运算符，但是它相比虚成员函数蕴含更多的风险：必须直到转换的目标类型并且必须检查类型转换能否被成功执行。
+
+### 19.2.1 dynamic_cast 运算符
+
+使用形式：
+
+```cpp
+dynamic_cast<type *>(expression);
+dynamic_cast<type &>(expression);
+dynamic_cast<type &&>(expression);
+```
+
+其中，type 必须是一个类类型，通常情况下该类型含有虚函数。第一种形式：expression 必须是一个有效的指针；第二种：expression 必须是一个左值；第三种：expression 不能是左值。
+
+expression 的类型必须符合以下三个条件中的任意一个：
+
+1. e 的类型是目标 type 的公有派生类。
+
+2. e 的类型是目标 type 的公有基类。
+
+3. e 的类型就是目标 type 的类型。
+
+如果类型符合，转换成功；否则转换失败：此时若转换目标为指针类型，结果为0；若转换目标为引用类型，则 dynamic_cast 运算符抛出一个 bad_cast 异常。
+
+>https://www.nowcoder.com/questionTerminal/9a4991484ea74f9eb91aea062d4d2b47
+
+- upcast 向上转型一定会成功
+
+```cpp
+class A {
+public:
+    A() {}
+    virtual ~A() = default;
+    virtual void print() {
+        std::cout << "A" << std::endl;
+    }
+};
+
+class B : public A {
+public:
+    B() {}
+    virtual ~B() = default;
+    void print() override {
+        std::cout << "B" << std::endl;
+    }
+};
+
+int main()
+{
+    B *pb = new B;
+    A *pa = dynamic_cast<A *>(pb); // 转型成功
+    if (pa == nullptr)
+        std::cout << "cast error" << std::endl;
+}
+```
+
+- downcast 向下转型看本质，例如：
+
+```cpp
+class A {
+public:
+    A() {}
+    virtual ~A() = default;
+    virtual void print() {
+        std::cout << "A" << std::endl;
+    }
+};
+
+class B : public A {
+public:
+    B() {}
+    virtual ~B() = default;
+    void print() override {
+        std::cout << "B" << std::endl;
+    }
+};
+
+class C : public B {
+public:
+    C() {}
+    virtual ~C() = default;
+    void print() override {
+        std::cout << "C" << std::endl;
+    }
+};
+
+int main()
+{
+    B *pb = new B;
+    C *pc = dynamic_cast<C *>(pb);  // B* -> C* downcast，pb 的本质是 B* 而不是 C*，所以转换失败
+    if (pc == nullptr) std::cout << "cast error" << std::endl; // cast error
+}
+```
+
+#### 指针类型的 dynamic_cast
+
+如果 Base 类含有一个虚函数，Derivec 是 Base 的公有派生类。若指针 bp 指向 Base，则可以在运行时将它转换成指向 Derived 的指针：
+
+```cpp
+if (Derived *dp = dynamic_cast<Derived *>(bp)) {
+    // use dp
+} else {
+    // dp = nullptr, cannot use dp
+}
+```
+
+在条件部分定义 dp 的好处是：可以在一个操作中同时完成类型转换和条件检查两项任务。且 dp 在 if 语句外部是不可访问的，就算转换失败，dp 也不可访问，保证了程序安全。
+
+#### 引用类型的 dynamic_cast
+
+不存在空引用，所以引用类型转换失败时，程序会抛出一个名为 `std::bad_cast` 的异常，该异常定义在头文件 `typeinfo` 中：
+
+```cpp
+void f(const Base &b) {
+    try {
+        const Derived &d = dynamic_cast<const Derived &>(b);
+    } catch (bad_cast) {
+        // deal with casting failure
+    }
+}
+```
+
+### 19.2.2 typeid 运算符
+
+- 表达式形式：`typeid(expr)`
+
+- 结果：一个常量对象的引用，类型为：标准库类型 `type_info` 或者 `type_info` 的公有派生类型（定义在 typeinfo 头文件中）
+
+- 作用的表达式 `expr` 类型：
+
+1. 顶层 const 被忽略 
+
+2. 如果表达式是引用，typeid 返回引用所引对象的类型 
+
+3. 若表达式是数组或函数，不会转换为指针，类型就是数组或函数类型。
+
+4. 运算对象不属于类类型或者是一个不包含任何虚函数的类，则返回运算对象的静态类型。
+
+5. 运算对象是至少定义了一个虚函数的类的左值时，结果运行时求得。
+
+#### 使用 typeid 运算符
+
+```cpp
+Derived *dp = new Derived;
+Base *bp = dp;
+
+if (typeid(*bp) == typeid(*dp)) {
+    // ...
+}
+
+if (typeid(*bp) == typeid(Derived)) {
+    // ...
+}
+```
+
+需要注意，**typeid 应作用于对象，所以不能传入指针。** 当运算对象为指针时，返回的结果是该指针的静态编译时的类型。
+
+typeid 是否需要运行时检查，决定了表达式是否会被求值：
+
+- 当表达式的类型含有虚函数时，编译器会对表达式求值。
+
+- 表达式的类型如果没有虚函数，则 typeid 返回表达式的静态类型，无需对表达式求值。
+
+如果表达式的动态类型和静态类型不同，则必须在运行时对表达式求值。对于 `typeid(*p)`：
+
+- 如果 p 的类型不含有虚函数，则 p 不需要是一个有效的指针。
+
+- 如果 p 的类型含有虚函数，p 必须是一个有效的指针。如果 p 是空指针，则 typeid(*p) 抛出一个名为 bad_typeid 的异常。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## 19.3 枚举类型(enumeration)
 

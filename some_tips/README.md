@@ -849,6 +849,8 @@ extern 修饰的变量存在，但是可能不在当前的编译单元，在链�
 
 ## RTTI(Run-Time Type Identification) and typeid
 
+详细内容见 [C++Primer chapter 19.2]
+
 C++ 提供了运行时类型识别(RTTI)，可以通过 `typeid` 操作符的得到动态的类型信息：
 
 ```cpp
