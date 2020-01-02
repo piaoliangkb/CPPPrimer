@@ -521,7 +521,7 @@ doble undisdounted = baseP->Quote::net_price(42);
 
 - `=0` 只能出现在类内部的虚函数声明语句处。
 
-- 我们可以为纯虚函数提供定义，不过函数体必须定义在类的外部。
+- 我们可以为纯虚函数提供定义，不过函数体必须定义在类的外部。(纯虚析构函数必须提供定义。当析构一个派生类的时候，派生类的析构函数先调用，一层一层最后会调用抽象基类的纯虚析构函数，若不定义，链接器会发生错误。[effective c++ item07 : 抽象基类：提供纯虚析构函数，并提供定义](https://github.com/piaoliangkb/cppprimer/blob/master/effective_cpp/2.%20Constructors%2C%20Destructors%2C%20and%20Assignment%20Operations.md#%E6%8A%BD%E8%B1%A1%E5%9F%BA%E7%B1%BB%E5%A3%B0%E6%98%8E%E7%BA%AF%E8%99%9A%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0%E5%B9%B6%E6%8F%90%E4%BE%9B%E5%AE%9A%E4%B9%89))
 
 例如：
 
