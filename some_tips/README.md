@@ -59,6 +59,7 @@
 - [extern 和 static](#extern-和-static)
 - [RTTI(Run-Time Type Identification) and typeid](#rttirun-time-type-identification-and-typeid)
 - [pimpl idiom(pointer to implementation)](#pimpl-idiompointer-to-implementation)
+- [operator* operator+ 返回值是否需要为 const](#operator-operator-返回值是否需要为-const)
 
 <!-- /TOC -->
 --------------------------------
@@ -951,3 +952,27 @@ clang++ -std=c++11 User.cpp test_User.cpp
 - 维护成本：增添了一个类，使用时需要调用指针，使得维护工作变得复杂。
 
 - 继承：被隐藏的实现是 private 成员，无法被继承。（[C++Primer chapter 15.2.2 静态成员与继承](https://github.com/piaoliangkb/cppprimer/tree/master/chapter15#%E9%9D%99%E6%80%81%E6%88%90%E5%91%98%E4%B8%8E%E7%BB%A7%E6%89%BF)）
+
+## operator* operator+ 返回值是否需要为 const
+
+根据 Effective c++: item03，对于有理数的 `operator*` 函数，定义为 `const Rational operator*(const Rational &lhs, const Rational &rhs);` 可以避免发生如下的情况：
+
+```cpp
+(A * B) = C;
+// or
+if (A * B = C) {
+    // ...
+}
+```
+
+那么 `operator+` 的返回值需要定义为 const 吗，为了防止发生 `(A + B) = C;` 的情况？
+
+c++ primer p497 示例程序：Sales_data 的 operator+ 程序：返回值不为 const
+
+```cpp
+Sales_data operator+(const Sales_data &lhs, const Sales_data &rhs) {
+    Sales_data sum = lhs;
+    sum += rhs;
+    return sum;
+}
+```
