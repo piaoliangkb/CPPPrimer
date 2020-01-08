@@ -30,6 +30,22 @@
     - [4.6.4 C++ 中使用 RAII 的地方 (pervasice 普遍的)](#464-c-中使用-raii-的地方-pervasice-普遍的)
     - [4.6.7 继承体系中不要使用默认的拷贝或移动操作 (delete)](#467-继承体系中不要使用默认的拷贝或移动操作-delete)
     - [4.7 总结（重要！）](#47-总结重要)
+- [ch5. Templates](#ch5-templates)
+    - [5.2 模板是编译期机制，没有运行期损耗](#52-模板是编译期机制没有运行期损耗)
+    - [5.2 模板的 value arguments](#52-模板的-value-arguments)
+    - [5.3 一个简单的计算 Container 的 sum 模板](#53-一个简单的计算-container-的-sum-模板)
+    - [5.5 函数对象模板 和 lambda](#55-函数对象模板-和-lambda)
+    - [5.6 可变参数模板（占坑）](#56-可变参数模板占坑)
+    - [5.8 Template Compilation Model （占坑）](#58-template-compilation-model-占坑)
+    - [5.9 总结](#59-总结)
+- [ch7. Strings and Regular Expressions](#ch7-strings-and-regular-expressions)
+    - [7.2.1 basic_string<char>](#721-basic_stringchar)
+    - [7.3 正则表达式（占坑）](#73-正则表达式占坑)
+- [ch8. I/O Streams](#ch8-io-streams)
+    - [8.1 istream & ostream](#81-istream--ostream)
+    - [8.5 读入 "{ "name", number }" 类型的数据示例](#85-读入--name-number--类型的数据示例)
+    - [8.6 cout 各种格式化方式](#86-cout-各种格式化方式)
+    - [8.8 ostringstream.str()](#88-ostringstreamstr)
 
 <!-- /TOC -->
 
@@ -661,3 +677,217 @@ public:
 33. 如果一个类有指针或者引用成员，那么这个类需要一个析构函数和用户定义的拷贝操作。
 
 35. 如果某个类是一个 resource handle，那么这个类需要构造函数，析构函数，用户定义的(non-default) 的拷贝操作。
+
+## ch5. Templates
+
+### 5.2 模板是编译期机制，没有运行期损耗
+
+Templates are compile-time mechanism. Their use incurs no run-time overhead compared to hand-crafted code. (手搓的函数)
+
+### 5.2 模板的 value arguments
+
+```cpp
+template<typename T, int N>
+struct Buffer {
+    using value_type = T;
+    constexpr int size() { return N; }
+    T[N];
+    // ...
+};
+```
+
+上述的 N 为模板的 value arguments，它让用户可以创建不同参数的 buffers 而 **不需要在运行期间动态分配内存 (dynamic memory)。**
+
+- 模板的 value arguments 必须是 **常量表达式 (constant expression)**
+
+例如：
+
+```cpp
+Buffer<char, 1024> glob;  // statically allocated
+
+void func() {
+    Buffer<int, 10> buf;  // on the stack
+}
+```
+
+### 5.3 一个简单的计算 Container 的 sum 模板
+
+```cpp
+template<typename Container, typanem Value>
+Value sum(const Container &c, Value v) {
+    for (auto x : c) {
+        v += x;
+    }
+    return v;
+}
+```
+
+对该函数模板的使用：
+
+```cpp
+void user(Vector<int> &vi, std::list<double> &ld, std::vector<complex<double>> &vc) {
+    double d = sum(vi, 0.0);  // sum of a vector of ints, 使用 double 的原因是 int 和 int 相加可能会产生超过最大 int 的整数
+
+    double dd = sum(ld, 0.0);
+
+    auto z = sum(vc, complex<double>{});
+}
+```
+
+### 5.5 函数对象模板 和 lambda
+
+定义一个比较大小的函数对象模板
+
+```cpp
+template<typename T>
+class Less_than {
+private:
+    const T val;
+public:
+    Less_than(const T &v) : val(v) {}
+
+    bool operator()(const T &x) const { return x < val; }
+};
+```
+
+可以根据该模板定义一些函数对象用来比较参数和类内给定值：
+
+```cpp
+Less_than<int> lti {42};  // lti(i) compare i to 42 using <
+Less_than<string> lts {"Backus"};  // lts(s) compare s to "Backus" using <
+```
+
+函数对象模板通常用作算法的参数,例如对于一个统计计数的函数，其中 P 可以传入 **函数对象**，或者 **lambda**：
+
+```cpp
+template<typename C, typename P>
+int count(const C &c, P pred) {
+    int cnt = 0;
+    for (const auto &x : c) {
+        if (pred(x)) {
+            ++cnt;
+        }
+    }
+    return cnt;
+}
+
+// call of this func
+void f(const Vector<int> &vec, const list<string> &lst, int x, const string &s) {
+    count(vec, Less_than<int>{x});
+    count(lst, Less_than<string>{s});
+}
+
+void f1(const Vector<int> &vec, const list<string> &lst, int x, const string &s) {
+    count(vec, [&](int a){ return a < x; });
+    count(lst, [&](const string &str){ return str < s; });
+}
+```
+
+### 5.6 可变参数模板（占坑）
+
+### 5.8 Template Compilation Model （占坑）
+
+### 5.9 总结
+
+6. Templates are type-safe, but checking happeds too late.(?)
+
+11. Use concepts as a design tool.(?)
+
+14. A virtual function member cannot be a template member function.
+
+17. Donot use variadic templates for homogeneous argument lists(prefer initializer list)(?)
+
+18. To use a template, make sure its definition (not just its declaration) is in scope.
+
+## ch7. Strings and Regular Expressions
+
+### 7.2.1 basic_string<char>
+
+我们平时使用的 string 是：`basic_string<char>`：
+
+```cpp
+template<typename Char>
+class basic_string {
+    // ...
+};
+
+using string = basic_string<char>;
+```
+
+### 7.3 正则表达式（占坑）
+
+## ch8. I/O Streams
+
+### 8.1 istream & ostream
+
+- ostream 将类型对象 (typed objects) 转换为字节流：
+
+<img src="https://ccozqa.dm.files.1drv.com/y4mrhRyjV_L_WKVfNaatabLaPJU8lujrNcL4QwPIJAR607i8s5m-_gt_y1KY-ML7hbhrV7kFZJQQ-9zBC9buVWeUFS4qtGYsGHge6naBppfxKAH34PAH4A-2XkcNEi9-w-4nJQMHy9QrgJiD79dSyEd1p6xB9O6i7XlM6AAkuszozOO9xXEdadnXootKgPTHSEpWEIlvYBg_btcwO5IQkIWKg?width=660&height=167&cropmode=none" width="660" height="167" />
+
+- istream 将字节流转换为类型对象：
+
+<img src="https://byozqa.dm.files.1drv.com/y4muHB54SRUZE5hmAIQ1_62catc4g2lpwMvraTOZkdIr7aPH1xCkXZGdChCi73-E38SwtgBv05skAojcZVe52AvQNS1zCeD2W4wHPjhSczIkb_jvy1NoF25dyf3zRYoS1tteXLqCsAezfFBbNOFSouhwQ8VqRvtgj5BO4U9vYJNdW8QQ4dTDBL1Ns7tHVjVU9zaaiwyzsMsHAXnMfKXjZgKdw?width=660&height=161&cropmode=none" width="660" height="161" />
+
+### 8.5 读入 "{ "name", number }" 类型的数据示例
+
+```cpp
+// read data like { "name", number } into e
+istream &operator>>(istream &is, Entry &e) {
+    char c, c2;
+    if (is >> c && c == '{' && is >> c2 && c2 == '"') {
+        string name;
+        while (is.get(c) && c != '"')
+            name += c;
+        
+        if (is >> c && c == ',') {
+            int number = 0;
+            if (is >> number >> c && c == '}') {
+                e = { name, number };
+                return is;
+            }
+        }
+    }
+    is.setstate(ios_base::failbit);
+    return is;
+}
+```
+
+### 8.6 cout 各种格式化方式
+
+```cpp
+// 1234, 4d2, 2322
+cout << 1234 << " " << hex << 1234 << " " << oct << 1234 << endl;
+```
+
+上述分别为 十进制，十六进制，八进制。
+
+```cpp
+constexpr double d = 123.456;
+
+cout << d;  // default format
+cout << scientific << d; // 1.1234560e+002 科学计数法
+cout << hexfloat << d;   // 十六进制
+cout << fixed << d;      // 123.456000
+cout << defaultfloat << d; // default format
+```
+
+- defaultfloat: style that best preserves the value in the space avaliable. 精度 (precision) 指定为最大位数。
+
+- scientific: one digit before a decimal point and an exponent. 精度指定为小数点后的最大位数。
+
+- fixed: an integer part followed by a decimal point and a fractional (小数的) part. 精度指定为小数点后的最大位数
+
+`cout.precision(n)` 设置了精度。精度不会影响整形的输出：
+
+```cpp
+cout.precision(8);
+cout << 1234.56789 << " " << 123456;
+// 1234.5679 123456
+
+cout.precision(4);
+cout << 1234.56789 << " " << 123456;
+// 1235 123456
+```
+
+### 8.8 ostringstream.str()
+
