@@ -15,6 +15,21 @@
     - [3.4.1 noexcept](#341-noexcept)
     - [3.4.2 Invariants (不变式)](#342-invariants-不变式)
     - [3.4.3 Static Assertions](#343-static-assertions)
+- [ch4. Classes](#ch4-classes)
+    - [4.2 Concrete Types 具象类（非抽象类）](#42-concrete-types-具象类非抽象类)
+    - [4.2.1 const 修饰符的另一种理解](#421-const-修饰符的另一种理解)
+    - [4.2.3 initializer_list\<T\> & static_cast](#423-initializer_list\t\--static_cast)
+    - [4.3 Abstract Types 抽象类](#43-abstract-types-抽象类)
+    - [4.4 虚函数表 virtual function table (vtbl)](#44-虚函数表-virtual-function-table-vtbl)
+    - [4.5.2 类的层次结构（继承，派生）的好处](#452-类的层次结构继承派生的好处)
+    - [4.5.3 dynamic_cast 待理解](#453-dynamic_cast-待理解)
+    - [4.5.4 使用 unique_ptr 避免资源泄露](#454-使用-unique_ptr-避免资源泄露)
+    - [4.6.2 move constructor](#462-move-constructor)
+    - [4.6.3 类中都需要定义哪些成员函数](#463-类中都需要定义哪些成员函数)
+    - [4.6.3 when an object is copied or moved](#463-when-an-object-is-copied-or-moved)
+    - [4.6.4 C++ 中使用 RAII 的地方 (pervasice 普遍的)](#464-c-中使用-raii-的地方-pervasice-普遍的)
+    - [4.6.7 继承体系中不要使用默认的拷贝或移动操作 (delete)](#467-继承体系中不要使用默认的拷贝或移动操作-delete)
+    - [4.7 总结（重要！）](#47-总结重要)
 
 <!-- /TOC -->
 
@@ -358,3 +373,291 @@ void f(double speed) {
     static_assert(speed<local_max, "cannot go that fast");  // true
 }
 ```
+
+## ch4. Classes
+
+### 4.2 Concrete Types 具象类（非抽象类）
+
+Concrete Types (和 abstract types 相对) 的几个特点：
+
+- 可以放在 stack 上，静态分配的内存中，或者其他对象中
+
+- 不需要用指针或者引用来指向某个对象，直接代表某个对象
+
+- 使用构造函数立即并完全初始化对象
+
+- 可以拷贝对象
+
+对一个 Concrete Types 来说，它的 representation 可以是私有的（即类的实现作为私有成员）。如果这样的话，如果 **类的 representation 改变**，那么用户必须 **重新编译**。
+
+为了提升灵活性 (flexibility)，一个 Concrete Types 可以把它的实现放在 **heap (动态分配的内存中)**，通过类内部的 handles 来访问它。(pimpl idiom)
+
+### 4.2.1 const 修饰符的另一种理解
+
+在如下类中：
+
+```cpp
+class complex {
+private:
+    double re, im;
+public:
+    void real() const { return re; }
+    void imag() const { return im; }
+};
+```
+
+- 函数添加 const 修饰符之后可以作用于 const 类对象。
+
+- const 修饰符也表示了 **函数不会修改调用它的对象 (do not modify the objects for which they are called)**
+
+### 4.2.3 initializer_list\<T\> & static_cast
+
+对于一个 Vector 类，构造函数接受一个 initializer_list\<T> 参数来初始化成员：
+
+```cpp
+class Vector {
+public:
+    Vector(std::initializer_list<double>);
+private:
+    double *elem;
+    int sz;
+};
+```
+
+构造函数的定义为：
+
+```cpp
+Vector::Vector(std::initializer_list<double> lst)
+    : elem{new double[lst.size()]}, sz{static_cast<int>(lst.size())} 
+{
+    copy(lst.begin(), lst.end(), elem);
+}
+```
+
+`sz` 的初始化使用了 static_cast 的原因是 lst 初始化列表的长度可能大于 int 的最大值。
+
+**`static_cast` 不检查它正在转换的值，它相信编程者会正确的使用这个函数。最好避免显式的转换，而是使用哪些设计好的库来避免 unchecked cast。**
+
+### 4.3 Abstract Types 抽象类
+
+- 我们不知道抽象类的 representation（size 也不知道）。
+
+- 必须在 heap 上分配对象所占的内存。
+
+- 只能通过指针或者引用来访问对象。
+
+- 抽象类不含有构造函数。
+
+- 抽象类的析构函数为虚函数。
+
+**拥有纯虚函数的类是抽象类**
+
+例如一个 Container 类：
+
+```cpp
+class Container {
+public:
+    virtual double &operator[](int) = 0;
+    virtual int size() const = 0;
+    virtual ~Container() {}
+};
+```
+
+一个 Container 的派生类 List：
+
+```cpp
+class List_container : public Container {
+private:
+    std::list<double> ld;
+public:
+    List_container() {}
+
+    List_container(std::initializer_list<double> il) : ld{il} {}
+
+    ~List_container() {}
+
+    double &operator[](int i);
+    int size() const { return ld.size(); }
+};
+
+double &List_container::operator[](int i) {
+    for (auto &x : ld) {
+        if (i == 0) return x;
+        --i;
+    }
+    throw out_of_range("List container");
+}
+```
+
+如下的 use 函数可以使用 Container 的派生类：
+
+```cpp
+void use(Container &c) {
+    const int sz = c.size();
+    
+    for (int i=0; i!=sz; ++i) {
+        cout << c[i] << '\n';
+    }
+}
+```
+
+提供上述 `size()` 和 `operator[](int)` 接口的类型叫做 **多态类型 (polymorphic type)**
+
+### 4.4 虚函数表 virtual function table (vtbl)
+
+上述的 Container 类必须在运行期间知道自己要调用的函数。最常规的实现方法是：编译器将虚函数的名字转换为虚函数表中的索引，这个表中包含了指针，指针指向要调用的函数。
+
+<img src="https://csozqa.dm.files.1drv.com/y4mU45hVYmfkhQE35Eat1OcTnS14fzKHl-TGDbrnRGac5MHy0Gk3kPyB8txWPxEVW_UtbUc_47U-FkSPPu2eUwmigxXH8bllSPRZ_Ru5HXjXw8oAHNewCSW0L0lj77YtFXVMiMIDJqW0iZJBESpFpfoIEnqfCqgpBaoHxcs9zAWmbt4Pukxga55jyTf1hfwMNwtVpYBeLBC9pfeK1RcFVtRRQ?width=1359&height=612&cropmode=none" width="600" height="300" />
+
+虚函数表中的函数让对象被正确的使用，即使 caller 不知道对象的大小，不了解数据的 layout。
+
+caller 的实现方只需要知道 **指向 vtbl 的指针的位置** 和 **每个虚函数的 index**。
+
+每个含有虚函数的类都会拥有 **一个额外的指针** 和 **一个 vtbl**。
+
+### 4.5.2 类的层次结构（继承，派生）的好处
+
+- 接口继承：一个派生类对象总是可以当作一个基类对象被使用。
+
+- 实现继承：一个基类会提供函数和数据成员给派生类使用，简化了派生类的实现。
+
+### 4.5.3 dynamic_cast 待理解
+
+### 4.5.4 使用 unique_ptr 避免资源泄露
+
+上文中的 read_shape 方法的实现为：
+
+```cpp
+enum class Kind { circle, triangle, smiley };
+
+Shape *read_shape(istream &is) {
+    // ...
+
+    switch(k) {
+        case Kind::circle:
+            return new Circle{p, r};
+        case Kind::triangle:
+            return new Triangle{p1, p2, p3};
+        case ...
+    }
+}
+```
+
+该方法可能会导致资源泄露：read_shape 函数返回的指针没有被 delete。
+
+可以使用 unique_ptr 替换内置指针：
+
+```cpp
+unique_ptr<Shape> read_shape(istream &is) {
+    // ...
+    
+    switch(k) {
+        case Kind::circle:
+            return unique_ptr<Shape>{new Circle{p, r}};
+        case ...
+    }
+}
+```
+
+### 4.6.2 move constructor
+
+```cpp
+Vector::Vector(Vector &&a)
+    : elem{a.elem}, sz{s.sz}  // why not use std::move?
+{
+    a.elem = nullptr;
+    a.sz = 0;
+} 
+```
+
+发生 move 的地方：
+
+```cpp
+Vector f() {
+    Vector x(1000);
+    Vector y(1000);
+    Vector z(1000);
+    z = x;             // copy
+    y = std::move(x);  // move
+    return z;          // move
+}
+```
+
+### 4.6.3 类中都需要定义哪些成员函数
+
+如果一个类定义了带有某些操作的析构函数 (nontrivial task)，则这个类最好提供所有的成员函数：
+
+```cpp
+class X {
+public:
+    X(sometype);
+    X();
+
+    X(const X &);
+    X &operator=(const X &);
+
+    X(X &&);
+    X &operator=(X &&);
+
+    ~X();
+};
+```
+
+当一个类含有 **指针或者引用成员** 的时候，最好显式地写出 **拷贝和移动** 操作。
+
+### 4.6.3 when an object is copied or moved
+
+- 作为赋值中的 source
+
+- 作为对象的 initializer
+
+- 作为函数参数
+
+- 作为函数的返回值
+
+- 作为一个异常 (as an exception)
+
+### 4.6.4 C++ 中使用 RAII 的地方 (pervasice 普遍的)
+
+- memory: string, vector, mep. unordered_map
+
+- files: ifstream, ofstream
+
+- threads: thread
+
+- locks: lock_guard, unique_lock
+
+- general objects: unique_ptr, shared_ptr
+
+### 4.6.7 继承体系中不要使用默认的拷贝或移动操作 (delete)
+
+给定一个基类的指针指向派生类，但是不知道派生类有哪些成员，所以我们不知道如何拷贝这些成员。
+
+所以最好的解决方式是：让基类的拷贝和移动操作都为 delete 的。
+
+```cpp
+class Shape {
+public:
+    Shape(const Shape &) = delete;
+    Shape &operator=(const Shape &) = delete;
+
+    Shape(Shape &&) = delete;
+    Shape &operator=(Shape &&) = delete;
+
+    ~Shape();
+};
+```
+
+此时如果想拷贝某个对象，写一个 virtual clone function。（？）
+
+忘记将拷贝或者移动操作定义为 delete 的也没关系。**在一个定义了析构函数的类中，移动操作不会隐式生成。**
+
+### 4.7 总结（重要！）
+
+28. 如果一个类有析构函数，那么它的拷贝和移动操作要么是 用户定义的 (user-defined)，要么是 删除的 (deleted)。
+
+32. 默认的，将单参数的构造函数声明为 explicit 的。
+
+33. 如果一个类有指针或者引用成员，那么这个类需要一个析构函数和用户定义的拷贝操作。
+
+35. 如果某个类是一个 resource handle，那么这个类需要构造函数，析构函数，用户定义的(non-default) 的拷贝操作。
