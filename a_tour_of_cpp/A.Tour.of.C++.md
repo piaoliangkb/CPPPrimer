@@ -45,7 +45,33 @@
     - [8.1 istream & ostream](#81-istream--ostream)
     - [8.5 读入 "{ "name", number }" 类型的数据示例](#85-读入--name-number--类型的数据示例)
     - [8.6 cout 各种格式化方式](#86-cout-各种格式化方式)
-    - [8.8 ostringstream.str()](#88-ostringstreamstr)
+- [ch9. Containers](#ch9-containers)
+    - [9.2 vector 的成员](#92-vector-的成员)
+    - [9.2 capacity & size 的含义](#92-capacity--size-的含义)
+    - [9.2 继承 std::vector<T>](#92-继承-stdvectort)
+    - [9.3 list 的特性和使用情况](#93-list-的特性和使用情况)
+    - [9.4 map 的底层结构](#94-map-的底层结构)
+    - [9.5 unordered_map](#95-unordered_map)
+    - [9.6 多用 vector 而不是 list](#96-多用-vector-而不是-list)
+    - [9.6 forward_list （?）](#96-forward_list-)
+    - [9.7 传递 container 的引用，返回 container 的值](#97-传递-container-的引用返回-container-的值)
+- [ch10. Algorithms](#ch10-algorithms)
+    - [10.2 find_all（C++ 标准库没有 find_all 方法噢）](#102-find_allc-标准库没有-find_all-方法噢)
+    - [10.3 iterator 的实现](#103-iterator-的实现)
+    - [10.4 Stream Iterators （示例代码很精简）](#104-stream-iterators-示例代码很精简)
+- [ch11. Utilities](#ch11-utilities)
+    - [11.2 RAII](#112-raii)
+    - [11.2.1 使用可变参数模板实现的 make_unique](#1121-使用可变参数模板实现的-make_unique)
+    - [11.3 特定容器（占坑）](#113-特定容器占坑)
+    - [11.3.1 array 的性质](#1131-array-的性质)
+    - [11.3.2 bitset（占坑）](#1132-bitset占坑)
+    - [11.3.3 make_pair](#1133-make_pair)
+    - [11.3.3 创建 tuple 并获得 tuple 的元素](#1133-创建-tuple-并获得-tuple-的元素)
+    - [11.4 std::chrono & time](#114-stdchrono--time)
+    - [11.5 函数参数绑定 (bind, mem_fn)](#115-函数参数绑定-bind-mem_fn)
+    - [11.6 类型函数 type functions](#116-类型函数-type-functions)
+    - [11.6.1 iterator_traits（占坑）](#1161-iterator_traits占坑)
+    - [11.6.2 type predicates 类型谓词](#1162-type-predicates-类型谓词)
 
 <!-- /TOC -->
 
@@ -889,5 +915,387 @@ cout << 1234.56789 << " " << 123456;
 // 1235 123456
 ```
 
-### 8.8 ostringstream.str()
+## ch9. Containers
 
+### 9.2 vector 的成员
+
+- elem: pointers to the first element
+
+- space: one past the last element
+
+- last: one past the last allocated space
+
+- alloc: allocator，vector 从这里为它的 element 申请内存
+
+### 9.2 capacity & size 的含义
+
+- capacity: 在不重新分配内存空间的情况下，最多保存的元素个数。
+
+- size: 已经保存的元素数目。
+
+### 9.2 继承 std::vector<T>
+
+```cpp
+template<typename T>
+class Vec: public std::vector<T> {
+public:
+    using std::vector<T>::vector;  // use the constructor from std::vector<T>
+
+    T &operator[](int i) { return std::vector<T>::at(i); }
+
+    const T &operator[](int i) const { return std::vector<T>::at(i); }
+};
+```
+
+上述定义的 Vec 和 std::vector 相比带有越界检测：
+
+```cpp
+Vec<int> v {1, 2, 3, 4, 5};
+cout << v[1] << endl;
+cout << v[2] << endl;
+
+try {
+    cout << v[5] << endl;
+} catch (std::out_of_range) {
+    cout << "access vector[5] out_of_range. " << endl;
+}
+
+/*
+
+2
+3
+access vector[5] out_of_range. 
+
+*/
+```
+
+### 9.3 list 的特性和使用情况
+
+- list 是双向链表。
+
+- list.insert(p, elem) 表示在 p 的前方插入 elem。
+
+- 除非有使用 list 的明确理由，否则使用 vector。因为 vector 在遍历上做的更好 (find & count 方法)，在排序和搜索上做得更好 (sort & binary_search)。
+
+### 9.4 map 的底层结构
+
+map 是一棵搜索树（红黑树，平衡二叉树）：如果有 n 个元素，那么查找一个元素的时间复杂度为 O(log(n))
+
+<img src="https://40oqba.dm.files.1drv.com/y4m_LPlvlMLgK1ETrmPGZHaRwkH2x6dqUdflfhybMAForu19K7DBo3qsuh6YxyPD5smDYuheTvDaXEHtX9SkFuZSIgDcDDpTVdG1lp5Fulk_FHHqKgqAEMIUjaqJIuwd3oL3vTy3qmUhi-FRUC63EdAz_OA6vaW_IujxAeMd8pDNtZQLItyK49GObfrABF6lAmJRMa2bS_mtSyg6_vhv494VQ?width=655&height=374&cropmode=none"  />
+
+### 9.5 unordered_map
+
+unordered_map 使用 **哈希值来进行搜索** 而不是使用 **比较函数 (comparation using an ordering function such as '<')**
+
+标准库为 string 和其他内置类型提供了默认的哈希函数。用户也可以使用自己的哈希函数，通常以**函数对象提供 (function object)** 
+
+例如一个用户定义了哈希函数的 set：
+
+```cpp
+struct Record {
+    string name;
+    int product_code;
+};
+
+struct Rhash {
+    size_t operator()(const Record &r) const {
+        return hash<string>()(r.name) ^ hash<int>()(r.product_code);
+    }
+}
+
+unordered_set<Record, Rhash> my_set;
+```
+
+### 9.6 多用 vector 而不是 list
+
+vector 通常比 list 更有效率，即使是 erase 和 insert 操作。 (vector is usually more efficient than a list for short sequences of small elems).
+
+除非有明确的理由，否则使用 vector。
+
+### 9.6 forward_list （?）
+
+forward_list 是单向链表，是一个为 empty sequence 特别优化过的容器（只占用一个字的空间）。这种序列的元素数目为 0 或者非常少，实际中它很有用。
+
+即：对通常为空的序列，使用 forward_list
+
+### 9.7 传递 container 的引用，返回 container 的值
+
+19. Pass a container by reference and return a container by value.
+
+## ch10. Algorithms
+
+### 10.2 find_all（C++ 标准库没有 find_all 方法噢）
+
+例如在一个 string 中搜索所有出现字符 c 的位置：
+
+```cpp
+vector<string::iterator> find_all(string &s, char c) {
+    vector<string::iterator> res;
+    for (auto p=s.begin(); p!=s.end(); ++p) {
+        if (*p == c) res.push_back(p);
+    }
+
+    return res;
+}
+```
+
+可以将该函数模板化：
+
+```cpp
+template<typename C, typename V>
+vector<typename C::iterator> find_all(C &c, V v) {
+    vector<typename C::iterator> res;
+    for (auto p=c.begin(); p!=c.end(); ++p) {
+        if (*p == v) res.push_back(p);
+    }
+    return res;
+}
+```
+
+再优化，可以用类型别名简化模板的写法：
+
+```cpp
+template<typename T>
+using Iterator = typename T::iterator;
+
+template<typename C, typename V>
+vector<Iterator<C>> find_all(C &c, V v) {
+    vector<Iterator<C>> res;
+    for (auto p=c.begin(); p!=c.end(); ++p) {
+        if (*p == v) res.push_back(p);
+    }
+    return res;
+}
+```
+
+### 10.3 iterator 的实现
+
+不同容器的迭代器可以有不同的实现。
+
+对 vector 来说，迭代器可以直接是一个指针，指向 vector 内的某个元素：
+
+<img src="https://4koqba.dm.files.1drv.com/y4msBYkMsPat5ZkXmukvIAXXu7Mg_PfikGdRi2u7MHhUd00opO7SfQpSPoBwyDC8S6BLwaQCdqpq8tfVmCIoDTs8GLMehTl0UkJ2G_wIalDzYCu2A2m9rQigVeK5nP1ZgBXXvMJ-uCfkxHKwJdyFwzTRIRRbferEOUCvfnBEoB9-ljAZ9wWtla42JB5rlDwpvRVmEeveYpup9Roy8KzFJTQug?width=823&height=131&cropmode=none" />
+
+也可以是指向 vector 的指针加一个 index，这样的迭代器可以进行范围检查：
+
+<img src="https://4uoqba.dm.files.1drv.com/y4mybK9T8e0eBpaJV7t8cTX_wHaV_46a8edUq43NzviFgqROFHn4c26GZB5pTL2XE_ljGSgHd7pFBimFERYKQk3t2FkEAHwkZTVT8OI8yfUMunXMZdGb_Hmt5AWL0LvK4VjOko-jTFAALwksrRIpxluLEUQhkvJwJ36l97m8-lohNGQn4hUDZgourA7JpwOWXlFthBs1ZIeuVadPfVL36lHhQ?width=905&height=122&cropmode=none" />
+
+一个 list 的 iterator 必须指向一个 link 而不能是直接指向某个元素，因为要使用 link 来获得下一个 link 的位置：
+
+<img src="https://4eoqba.dm.files.1drv.com/y4mR-mwBhmliVWox64nEPZK9bqvvLGOAvJYY-8sBqzEhqPKjBAycMdA0Su4oIvObcOCTgL65ThoeyDhLfgYQwF4EDXYHu8b7m7bUE9ex45Iat4gT3jnpCnhUSgWH-XGx0Nrg4fzG340_0dQi4ShpYpSAP0FCt6w4qQxOGa6OdHzgxYp1BhxD24LIxXiTp19oVWS8uvaXoLtEM2caNZ6NaHAiA?width=967&height=266&cropmode=none" />
+
+### 10.4 Stream Iterators （示例代码很精简）
+
+使用 istream_iterator & ostream_iterator 从一个文件读取内容，写入另一个文件：
+
+```cpp
+int main()
+{
+    string from, to;
+    cin >> from >> to;    // source and target file names
+
+    ifstream is {from};
+    istream_iterator<string> ii {is};    // input iterator
+    istream_iterator<string> eof {};     // input eof
+
+    ofstream os {to};
+    ostream_iterator<string> oi {os, "\n"};
+
+    vector<string> b{ii, eof};    // read strings from istream_iterator
+    sort(b.begin(), b.end());
+
+    unique_copy(b.begin(), b.end(), oo);    // copy buffer to output_stream after discard replicated values 
+
+    return !is.eof() || !os;
+}
+```
+
+可以再简化一下：
+
+```cpp
+int main()
+{
+    string from, to;
+    cin >> from >> to;
+
+    ifstream is {from};
+    ofstream os {to};
+
+    vector<string> b{istream_iterator<string>{is}, istream_iterator<string>{}};
+    sort(b.begin(), b.end());
+
+    copy(b.begin(), b.end(), ostream_iterator<string>{os, "\n"});
+
+    return !is.eof() || !os;
+}
+```
+
+简化版本降低了代码量，可读性也有一定程度的降低。
+
+## ch11. Utilities
+
+### 11.2 RAII
+
+```cpp
+mutex m;
+
+void f() {
+    unique_lock<mutex> lck {m};
+    // ... manipulate shared data
+} // leave the scope and release mutex
+```
+
+### 11.2.1 使用可变参数模板实现的 make_unique
+
+```cpp
+template<typename T, typename... Args>
+unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T> {new T{std::forward<Args>(args)...}};
+}
+```
+
+### 11.3 特定容器（占坑）
+
+很多特定的容器有特定的功能，占个坑。
+
+### 11.3.1 array 的性质
+
+- a **fixed-size** sequence of elements
+
+- number of elements is specified **at compile time**
+
+- array 和内置数组很像，大小固定，但是不会像内置数组一样转换成指针类型。
+
+- 和内置数组相比，使用 array 没有额外的时间或者空间消耗。
+
+- array 提供了一些便捷的函数。
+
+- array 不像其他 STL 容器一样充当着 handle to elements。array 直接包含元素。
+
+array 可以用在 C 风格的接口和 C++ 风格的接口上：
+
+```cpp
+void f(int *p, int sz);    // C-style interface
+
+void g() {
+    array<int, 10> a;
+
+    f(a, a.size());        // error
+    f(&a[0], a.size());    // true
+    f(a.data(), a.size()); // true
+
+    auto p = find(a.begin(), a.end(), 777);    // C++-style useage
+}
+```
+
+### 11.3.2 bitset（占坑）
+
+### 11.3.3 make_pair
+
+make_pair 函数可以创建一个 pair 而不用显式指出类型:
+
+```cpp
+void f(vector<string> &v) {
+    auto pp = make_pair(v.begin(), 2);
+}
+```
+
+### 11.3.3 创建 tuple 并获得 tuple 的元素
+
+```cpp
+tuple<string, int, double> t2{"Slid", 123, 3.14};
+
+auto t = make_tuple(string{"hello"}, 10, 3.14);
+
+string s = get<0>(t);
+int x = get<1>(t);
+```
+
+### 11.4 std::chrono & time
+
+C++ 中测量时间：
+
+```cpp
+#include <chrono>
+
+using namespace std::chrono;
+
+auto t0 = high_resolution_clock::now();
+
+do_something();
+
+auto t1 = high_resolution_clock::now();
+
+cout << duration_cast<milliseconds>(t1-t0).count() << "msec\n";  // convert a duration into a known unit
+```
+
+### 11.5 函数参数绑定 (bind, mem_fn)
+
+标准库提供了 `bind()` 和 `mem_fn()` 适配器来进行函数的参数绑定。
+
+现在可以更多的使用 lambda 来代替函数参数绑定。
+
+- bind() 函数
+
+使用示例
+
+```cpp
+using namespace placeholders;
+
+void f(int, const string &);
+auto g = bind(f, 2, _1);
+
+f(2, "hello");  // equals to g("hello")
+g("hello");
+```
+
+- mem_fn() 函数
+
+mem_fn 函数生成一个函数对象，使得用户可以像调用非成员函数一样调用这个对象。某些算法需要它的操作以非成员函数的方式使用，mem_fn 通常用在这些算法中。
+
+```cpp
+void draw_all(vector<Shape*> &v) {
+    for_each(v.begin(), v.end(), mem_fn(&Shape::draw));
+}
+```
+
+可以使用 lambda 替代：
+
+```cpp
+void draw_all(vector<Shape*> &v) {
+    for_each(v.begin(), v.end(), [](Shape *p){ p->draw(); });
+}
+```
+
+### 11.6 类型函数 type functions
+
+类型函数是在编译期间进行求值的函数，接受一个类型作为参数或者返回一个类型作为结果。通常用于 metaprogramming 或者 template metaprogramming
+
+例如：`<limits>` 的 `numeric_limits` 函数：
+
+```cpp
+constexpr float min = numeric_limits<float>::min();
+```
+
+sizeof 函数：
+
+```cpp
+constexpr int sz = sizeof(int);
+```
+
+### 11.6.1 iterator_traits（占坑）
+
+标准库 sort 接受一对迭代器，这对迭代器表示序列的双端，且两个迭代器必须提供对序列的随机访问 (random-access iterator).
+
+forward_list 是单链表，只提供前向迭代器 (forward iterator).
+
+标准库提供的 iterator_traits 可以检查当前容器支持的迭代器。
+
+### 11.6.2 type predicates 类型谓词
+
+例如：
+
+```cpp
+bool b1 = Is_arithmetic<int>();    // yes
+bool b2 = Is_arithmetic<string>(); // no
+```
