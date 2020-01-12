@@ -72,6 +72,21 @@
     - [11.6 类型函数 type functions](#116-类型函数-type-functions)
     - [11.6.1 iterator_traits（占坑）](#1161-iterator_traits占坑)
     - [11.6.2 type predicates 类型谓词](#1162-type-predicates-类型谓词)
+- [ch12. Numerics](#ch12-numerics)
+    - [12.2 cmath 中的数学函数](#122-cmath-中的数学函数)
+    - [12.5 随机数生成](#125-随机数生成)
+    - [12.6 支持算术运算的 vector —— valarray](#126-支持算术运算的-vector--valarray)
+- [ch13. Concurrency](#ch13-concurrency)
+    - [13.2 task & threads](#132-task--threads)
+    - [13.3 传递给 thread 参数](#133-传递给-thread-参数)
+    - [13.4 传递给 thread 参数来获得返回结果](#134-传递给-thread-参数来获得返回结果)
+    - [13.5 使用 mutex 来访问共享数据](#135-使用-mutex-来访问共享数据)
+    - [13.5 手动 lock() 操作获取多个锁](#135-手动-lock-操作获取多个锁)
+    - [13.6 condition_variable](#136-condition_variable)
+    - [13.7 task 通信机制](#137-task-通信机制)
+    - [13.7.1 future & promise](#1371-future--promise)
+    - [13.7.2 packaged_task 将 future & promise 和 task 相关联](#1372-packaged_task-将-future--promise-和-task-相关联)
+    - [13.8 async()](#138-async)
 
 <!-- /TOC -->
 
@@ -1299,3 +1314,371 @@ forward_list 是单链表，只提供前向迭代器 (forward iterator).
 bool b1 = Is_arithmetic<int>();    // yes
 bool b2 = Is_arithmetic<string>(); // no
 ```
+
+## ch12. Numerics
+
+### 12.2 cmath 中的数学函数
+
+函数 | 功能
+--- | ---
+abs(x) | x 的绝对值
+ceil(x) | 大于 x 的最小整数
+floor(x) | 小于 x 的最大整数
+sin, cos, tan, acos, asin, atan, sinh, cosh, tanh | 三角函数
+exp(x) | e 的 x 次方
+log(x), log10(x) | 自然对数，以10为底的对数
+
+### 12.5 随机数生成
+
+随机数生成器包含两部分：
+
+1. 用来生成一系列随机或者伪随机数的 **engine**
+
+2. 将生成的随机数映射到数学上某个范围的 **distribution** （例如：uniform_int_distribution, normal_distribution, exponential_distribution）
+
+```cpp
+#include <random>
+#include <iostream>
+#include <functional>
+
+int main()
+{
+    using my_engine = std::default_random_engine;    // type of engine
+    using my_distribution = std::uniform_int_distribution<>;    // type of distribution
+
+    my_engine re {};    // defaulr engine
+    my_distribution one2six {1, 6};    // uniform_int_distribution maps to 1..6
+    auto die = std::bind(one2six, re);   // die() equals one2six(re)
+
+    std::cout << die() << " " << die() << " " << die() << std::endl;
+    std::cout << one2six(re) << std::endl;
+}
+```
+
+上述代码，对 `die()` 的调用相当于调用 `one2six(re)`. 简化代码可以写成：
+
+```cpp
+auto die = std::bind(std::uniform_int_distribution<>{1, 6}, std::default_random_engine{});
+```
+
+也可以通过一个类来简化随机数的生成，例如定义一个 Rand_int 类：
+
+```cpp
+class Randint {
+private:
+    std::default_random_engine re;
+    std::uniform_int_distribution<> dist;
+public:
+    Randint(int low, int high) : dist{low, high} {}
+    int operator()() { return dist(re); }
+};
+```
+
+则在使用的时候只需要：`Randint rnd{1, 10}; int x = rnd();`
+
+### 12.6 支持算术运算的 vector —— valarray
+
+例子：
+
+```cpp
+#include <valarray>
+
+void f(valarray<double> &a1, valarray<double> &a2) {
+    valarray<double> a = a1*3.14 + a2/a1;
+    a2 += a1*3.14;
+    a = abs(a);
+    double d = a2[7];
+}
+```
+
+## ch13. Concurrency
+
+### 13.2 task & threads
+
+- task：和其他任务并行执行的计算称为任务。task 通常是一个 **函数或者函数对象**。
+
+- threads 线程：task 在程序中的 system-level 表示。
+
+例如：
+
+```cpp
+#include <thread>
+
+void f();
+
+struct F {
+    void operator()();
+};
+
+void user() {
+    std::thread t1 {f};
+    std::thread t2 {F()};
+
+    t1.join();
+    t2.join();
+}
+```
+
+- `join` 保证了直到线程结束才退出 user 函数。
+
+- 一个程序的 threads 分享同一块地址空间。所以 threads 和 processes 不同，processes 不会直接分享数据。
+
+### 13.3 传递给 thread 参数
+
+```cpp
+void f(vector<double> &v);
+
+struct F {
+    vector<double> &v;
+    F(const vector<double> &vv) : v{vv} {}
+    void operator()();
+};
+
+void user() {
+    vector<double> v1{1, 2, 3};
+    vector<double> v2{2, 3, 4};
+
+    std::thread t1 {f, ref(v1)};
+    std::thread t2 {F{v2}};
+
+    t1.join();
+    t2.join();
+}
+```
+
+对于函数 f ，使用了 `<functional>` 头文件中的 `std::ref` 方法来传递引用。若函数参数为 const，则使用 `std::cref` 函数。
+
+### 13.4 传递给 thread 参数来获得返回结果
+
+```cpp
+void f(const vector<double> &v, double *res);
+
+class F {
+public:
+    vector<double> &v;
+    F(const vector<double> &vv, double *p) : v{vv}, res{p} {}
+    void operator()();
+private:
+    const vector<double> &v;
+    double *res;
+};
+
+void user() {
+    vector<double> v1{1, 2, 3};
+    vector<double> v2{2, 3, 4};
+
+    double t1res;
+    double t2res;
+
+    std::thread t1 {f, cref(v1), &t1res};
+    std::thread t2 {F{v2, &t2res}};
+
+    t1.join();
+    t2.join();
+}
+```
+
+### 13.5 使用 mutex 来访问共享数据
+
+mutex：mutual exclusion object 互斥对象。
+
+一个线程会通过 lock() 操作来获取 mutex：
+
+```cpp
+mutex m;
+int shared_data;
+
+void f() {
+    unique_lock(mutex) lck {m};
+    sh += 7;
+}
+```
+
+上述代码使用了 `unique_lock` 的构造函数来获取 mutex（通过 m.lock() 操作）。一旦线程完成了对共享数据的访问，`unique_lock` 会释放 mutex（通过 m.unlock()） 操作。
+
+使用 mutex 的重点是必须知道哪个 mutex 对应的是哪个 shared_data。
+
+### 13.5 手动 lock() 操作获取多个锁
+
+手动的 lock() 直到获取所有的 mutex 参数才会执行，当持有任意一个 mutex 时并不会阻塞。
+
+```cpp
+void f() {
+    // defer_lock 表示之后再获取 mutex
+    unique_lock<mutex> lck1{m1, defer_lock};
+    unique_lock<mutex> lck2{m2, defer_lock};
+    unique_lock<mutex> lck3{m3, defer_lock};
+
+    // 获取所有 mutex
+    lock(lck1, lck2, lck3);  
+}
+```
+
+### 13.6 condition_variable
+
+- condition_variable 允许一个 thread 等待另一个进程。
+
+示例代码：
+
+```cpp
+#include <condition_variable>
+#include <thread>
+#include <mutex>
+#include <iostream>
+#include <queue>
+#include <string>
+
+class Message {
+public:
+    Message(const std::string &s) : msg{s} {}
+
+    std::string get() const {
+        return msg;
+    }
+
+private:
+    std::string msg;
+};
+
+std::queue<Message> mqueue;
+std::condition_variable mcond;
+std::mutex mmutex;
+
+// consumer read and process Messages
+void consumer() {
+    while (true) {
+        std::unique_lock<std::mutex> lck{mmutex};
+        mcond.wait(lck);   // release lock and wait notify
+                           // acquire lock again
+        auto m = mqueue.front();
+        mqueue.pop();
+        lck.unlock();
+
+        std::cout << m.get() << std::endl;
+    }
+}
+
+void producer() {
+    while (true) {
+        Message m{"something just like that"};
+
+        std::unique_lock<std::mutex> lck{mmutex};
+        mqueue.push(m);
+        mcond.notify_one();
+    }
+}
+
+int main() 
+{
+    std::thread csum{consumer};
+    std::thread pdcr{producer};
+
+    csum.join();
+    pdcr.join();
+}
+```
+
+### 13.7 task 通信机制
+
+C++ 标准库提供了一系列的设施让程序员在抽象的任务层进行 concurrency 操作，而不是使用底层的 threads & locks。
+
+- future & promise：用来从一个独立的线程上创建出任务的返回值。
+
+- packaged_task：启动 task 和连接返回值的机制。
+
+- async()：以类似函数调用的方法启动一个 task。
+
+上述全部在 `<future>` 头文件中。
+
+### 13.7.1 future & promise
+
+future 和 promise 允许在两个 task 之间直接传输数据，而不用操作 lock。
+
+当一个 task 想把一个值传递给另一个的时候，它把这个值放入到 promise。
+
+通常 task 的 launcher （或者其他 task）会通过 future 来获得 promise 传递的值，如果值还没到，那么线程就会阻塞直到值到达。
+
+<img src="https://50mr4q.dm.files.1drv.com/y4mm1gVtJb0sbdKbjybaF_6OFrxFvHakRE4IAF13R3jj2vQBJ_5Rt9uJDgK6Cu1DYNSpSleyTTJKUajRSsEiuKmNjryYfCLmZ99Pet9WCygMal4jqYik4c_85WXCwsVigITfdyOp2DtaPbAqYN8It0ZErEZOw8_4shPl4Y4HNs3rN8SZKDcmoEdh5QHMnfDHtc7SFDPnR_s1yJ4gVEeGIrvXg?width=1143&height=352&cropmode=none" />
+
+示例代码：
+
+```cpp
+// ------ promose put value ------//
+void f(promise<X> &px) {
+    try {
+        X res;
+        px.set_value(res);
+    } catch (...) {
+        px.set_exception(current_exception());
+    }
+}
+
+// ------ future get value ------//
+void g(future<X> &fx) {
+    try {
+        X v = fx.get();
+    } catch(...) {
+        // ... handle error
+    }
+
+}
+```
+
+### 13.7.2 packaged_task 将 future & promise 和 task 相关联
+
+标准库 packaged_task 提供了一层 wrapper，将某个任务的返回值和异常放到 promise 中。如果调用 get_future 向一个 packaged_task 发送请求，则会返回对应 primise 的 future。
+
+packaged_task 不能被拷贝，因为它是一个 resource handle：它拥有它的 promise 和 它任务所拥有的任何资源。
+
+例如，使用两个 task 分别计算一个 vector 的前半部分和后半部分的和，最后返回累加的结果：
+
+```cpp
+double accum(double *beg, double *end, double init) {
+    return accumulate(beg, end, init);
+}
+
+double comp2(vector<double> &v) {
+    using Task_type = double(double *, double *, double);
+
+    packaged_task<Task_type> pt0 {accum};
+    packaged_task<Task_type> pt1 {accum};
+
+    future<double> f0 {pt0.get_future()};
+    future<double> f1 {pt1.get_future()};
+
+    double *first = &v[0];
+    // use move(pt0) because of packaged_task cannot be copied
+    thread t1{move(pt0), first, first+v.size()/2, 0.0};
+    thread t2{move(pt1), first+v.size()/2, first+v.size(), 0.0};
+
+    return f0.get() + f1.get();
+}
+```
+
+### 13.8 async()
+
+async 的思路是：treat task as a function that may happed to run concurrently with other tasks
+
+例如将一个 vector 的元素拆分为四个部分计算和：
+
+```cpp
+double accum(double *beg, double *end, double init) {
+    return accumulate(beg, end, init);
+}
+
+double comp4(vector<double> &v) {
+    auto v0 = &v[0];
+    auto sz = v.size();
+
+    auto f0 = async(accum, v0, v0+sz/4, 0.0);
+    auto f1 = async(accum, v0+sz/4, v0+sz/2, 0.0);
+    auto f2 = async(accum, v0+sz/2, v0+sz*3/4, 0.0);
+    auto f3 = async(accum, v0+sz*3/4, v0+sz, 0.0);
+
+    return f0.get() + f1.get() + f2.get() + f3.get();
+}
+```
+
+- 不要对使用共享资源和 lock 的任务使用 async。
+
+- 使用 async 并不知道创建了多少个线程，这是根据系统可用的资源量来确定的。
