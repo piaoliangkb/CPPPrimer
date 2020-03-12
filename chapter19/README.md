@@ -126,9 +126,13 @@ int main()
 
 #### 指针类型的 dynamic_cast
 
-如果 Base 类含有一个虚函数，Derivec 是 Base 的公有派生类。若指针 bp 指向 Base，则可以在运行时将它转换成指向 Derived 的指针：
+>牛客网讨论：https://www.nowcoder.com/questionTerminal/9a4991484ea74f9eb91aea062d4d2b47 
+
+如果 Base 类含有一个虚函数，Derived 是 Base 的公有派生类。若指针 bp 指向 Base，则可以在运行时将它转换成指向 Derived 的指针(**有点费解**)：
 
 ```cpp
+Base *bp = new Base;
+
 if (Derived *dp = dynamic_cast<Derived *>(bp)) {
     // use dp
 } else {
