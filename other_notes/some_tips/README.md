@@ -60,6 +60,7 @@
 - [RTTI(Run-Time Type Identification) and typeid](#rttirun-time-type-identification-and-typeid)
 - [pimpl idiom(pointer to implementation)](#pimpl-idiompointer-to-implementation)
 - [operator* operator+ 返回值是否需要为 const](#operator-operator-返回值是否需要为-const)
+- [cin, cin.get, getline() 方法（对中止符的处理）(如何判断读入 enter)](#cin-cinget-getline-方法对中止符的处理如何判断读入-enter)
 
 <!-- /TOC -->
 --------------------------------
@@ -974,5 +975,38 @@ Sales_data operator+(const Sales_data &lhs, const Sales_data &rhs) {
     Sales_data sum = lhs;
     sum += rhs;
     return sum;
+}
+```
+
+## cin, cin.get, getline() 方法（对中止符的处理）(如何判断读入 enter)
+
+>cs106b assignment1: soundex.cpp
+>
+>ref: https://stackoverflow.com/questions/29630513/difference-between-cin-and-cin-get-for-char-array
+
+定义一个字符串，使用 `cin >> input` 来进行输入，在开头遇到结束符会忽略（空格，回车，制表），下一次遇到结束符号会结束输入。注意：`cin >>` 并不会丢弃结束符，仍然在缓冲区中。
+
+```cpp
+char m, n;
+cin >> m;   // 输入结束后换行
+cin.get(n); // n 将读到换行符
+```
+
+使用 `cin.get(input)` 进行输入，可以读取空格，但是遇到回车符会停止，不会丢弃回车符号 (leaves end-of-line character in stream)。读取单个字符的时候可以读取到回车符。通常用来吸收缓冲区中的回车符。例如，读取一行的 256个字符并且把回车符号消掉：
+
+```cpp
+cin.get(input, 256); cin.get();
+// equals to
+cin.getline(input, 256);
+```
+
+使用 `getline(cin, input)` 会读取到一行的内容，遇到回车符终止，但会清理掉缓冲区中的回车符。
+
+判断是否读入一个 enter：
+
+```cpp
+getline(cin, input);
+if (input == "") {
+    cout << "You input a enter(return)" << endl;
 }
 ```
