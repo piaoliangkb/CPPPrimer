@@ -61,6 +61,8 @@
 - [pimpl idiom(pointer to implementation)](#pimpl-idiompointer-to-implementation)
 - [operator* operator+ 返回值是否需要为 const](#operator-operator-返回值是否需要为-const)
 - [cin, cin.get, getline() 方法（对中止符的处理）(如何判断读入 enter)](#cin-cinget-getline-方法对中止符的处理如何判断读入-enter)
+- [遍历 map](#遍历-map)
+- [遍历 map 时删除元素](#遍历-map-时删除元素)
 
 <!-- /TOC -->
 --------------------------------
@@ -1008,5 +1010,61 @@ cin.getline(input, 256);
 getline(cin, input);
 if (input == "") {
     cout << "You input a enter(return)" << endl;
+}
+```
+
+## 遍历 map
+
+- 方式1: 使用迭代器和 `iter->first, iter->second`
+
+```cpp
+for (auto it = m.begin(); it != m.end(); ++it)
+{
+    cout << it->first << " " << it->second << endl;
+}
+// or use while
+auto it = m.begin();
+while (it != m.end()) {
+    cout << it->first << " " << it->second << endl;
+    ++it;
+}
+```
+
+- 方式2: for loop in c++11
+
+```cpp
+for (const auto &item: m) {
+    cout << item.first << " " << item.second << endl;
+}
+```
+
+- 方式3: decomposition declarations in c++17
+
+```cpp
+for (const auto& [key, val]: m) {
+    cout << key << " " << val << endl;
+}
+```
+
+## 遍历 map 时删除元素
+
+>cs106b assgnment2 use `map.remove(key)` in an iterator
+
+```cpp
+map<string, string> m = {
+    {"Hello", "world"},
+    {"Python", "list"},
+    {"golang", "google"},
+};
+
+auto it = m.begin();
+
+while (it != m.end()) {
+    if (it->first == "Python") {
+        it = m.erase(it);
+    }
+    else {
+        ++it;
+    }
 }
 ```
