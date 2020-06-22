@@ -63,6 +63,8 @@
 - [cin, cin.get, getline() 方法（对中止符的处理）(如何判断读入 enter)](#cin-cinget-getline-方法对中止符的处理如何判断读入-enter)
 - [遍历 map](#遍历-map)
 - [遍历 map 时删除元素](#遍历-map-时删除元素)
+- [反向迭代器 reverse_itreator](#反向迭代器-reverse_itreator)
+- [去除 string 首尾的标点符号 (punctuation)](#去除-string-首尾的标点符号-punctuation)
 
 <!-- /TOC -->
 --------------------------------
@@ -1050,6 +1052,8 @@ for (const auto& [key, val]: m) {
 
 >cs106b assgnment2 use `map.remove(key)` in an iterator
 
+遍历的时候不能删除东西，如果一定要删，使用 `map.erase(iter)` 方法，该方法会返回删除位置之后一个迭代器的位置。
+
 ```cpp
 map<string, string> m = {
     {"Hello", "world"},
@@ -1066,5 +1070,116 @@ while (it != m.end()) {
     else {
         ++it;
     }
+}
+```
+
+>How to do this in Python: https://stackoverflow.com/questions/1207406/how-to-remove-items-from-a-list-while-iterating
+
+## 反向迭代器 reverse_itreator
+
+>Remove punctuation from start and end of a string
+>
+>[cppprimer](https://github.com/piaoliangkb/cppprimer/blob/52c3df4f2bd993406573de6e13be209b16f286ba/chapter10/README.md#1043-%E5%8F%8D%E5%90%91%E8%BF%AD%E4%BB%A3%E5%99%A8) 
+>
+>[cppreference](https://en.cppreference.com/w/cpp/iterator/reverse_iterator/base)
+
+
+反向迭代器需要递减运算符，除了 forward_list 之外，标准容器上的其他迭代器都支持递增和递减运算。
+
+例如，找出一个字符串最后一个不是 数字 的字符，使用 `isdigit` 函数：
+
+```cpp
+string s = "       aksdjaj     ijijdsd123";
+auto iter = find_if_not(s.rbegin(), s.rend(), ::isdigit);
+cout << *iter << endl;  // d
+cout << *(iter.base()) << endl; // 1
+```
+
+上述代码从字符串 s 结尾找到了第一个不为数字的字符 `d`, 通过对迭代器解引用，输出了字符 `d`.
+
+使用迭代器的 `iter.base()` 方法，迭代器将会指向字符 `1`, 输出了字符 `1`.
+
+实际上：
+
+- reverse iterator 解引用会输出 previous element. 实际迭代器指向的是解引用项之后的一项。
+
+- 使用 `reverse_iterator.base()` 方法，可以获得 **正向迭代器**, 指向 reverse iterator 恰好指向的内容。
+
+    例如：
+
+    >https://stackoverflow.com/questions/16609041/c-stl-what-does-base-do
+
+    ```
+                           i, *i
+                             |
+    -      0     1     2     3     4     -
+                       |     | 
+                       *ri   ri
+    ```
+
+- 从正向迭代器构造一个反向迭代器，反向迭代器会指向和正向迭代器相同的位置，但是反向迭代器解引用的数值是该位置的前一个数。
+
+    例如：
+
+    ```cpp
+    std::vector<int> v = {0, 1, 2, 3, 4, 5};
+    
+    auto it = v.begin() + 3;
+    std::reverse_iterator<std::vector<int>::iterator> rev_it(it);
+    
+    cout << *it;  // 3
+    cout << *rev_it;  // 2
+    cout << *(rev_it.base());  // 3
+    cout << *(rev_it.base() - 1);  // 2
+    ```
+
+## 去除 string 首尾的标点符号 (punctuation)
+
+>https://www.reddit.com/r/cpp_questions/comments/3ssstt/removing_punctuation_from_the_start_and_end_of_a/
+
+使用 `cctype` 头文件的 `ispunct` 方法。
+
+- 方法1:
+
+去除开头的标点符号：
+
+```cpp
+s.erase(s.begin(), find_if_not(s.begin(), s.end(), ::ispunct));
+```
+
+去除结尾的标点符号：
+
+这里使用了反向迭代器来去除结尾的标点符号。从结尾开始找到第一个不是标点的位置，使用 `base()` 方法转换为正向迭代器，删除从该位置到结尾的字符。
+
+```cpp
+s.erase(find_if_not(s.rbegin(), s.rend(), ::ispunct).base(), s.end());
+```
+
+测试：
+
+```cpp
+string s = ",.,.!!aksdjaj!!!@!#!#!l     ijijdsd123...((*!";
+s.erase(s.begin(), find_if_not(s.begin(), s.end(), ::ispunct));
+s.erase(find_if_not(s.rbegin(), s.rend(), ::ispunct).base(), s.end());
+cout << s << endl;
+```
+
+输出：`aksdjaj!!!@!#!#!l     ijijdsd123`
+
+- 方法2:
+
+去除开头的字符串：
+
+```cpp
+while (::ispunct(s.front())) {
+    s.erase(s.begin());
+}
+```
+
+去除结尾的字符串：
+
+```cpp
+while (::ispunct(s.back()))  {
+    s.pop_back();
 }
 ```
