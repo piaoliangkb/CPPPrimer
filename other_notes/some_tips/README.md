@@ -65,6 +65,8 @@
 - [遍历 map 时删除元素](#遍历-map-时删除元素)
 - [反向迭代器 reverse_itreator](#反向迭代器-reverse_itreator)
 - [去除 string 首尾的标点符号 (punctuation)](#去除-string-首尾的标点符号-punctuation)
+- [this pointer](#this-pointer)
+- [什么时候使用类的 this pointer](#什么时候使用类的-this-pointer)
 
 <!-- /TOC -->
 --------------------------------
@@ -1182,4 +1184,123 @@ while (::ispunct(s.front())) {
 while (::ispunct(s.back()))  {
     s.pop_back();
 }
+```
+
+## this pointer
+
+>https://www.bogotobogo.com/cplusplus/this_pointer.php
+
+this pointer 保存了 class 实例的地址，从而允许类的成员函数访问类的成员。
+
+假定我们定义了 `class A`，创建了一个类 `A` 的实例 `objA`。`class A` 又一个非静态成员函数 `f()`。
+
+当调用函数 `objA.f()` 的时候，函数 `f()` 储存了 `objA` 的地址：
+
+```cpp
+// 定义函数 A::f()
+void A::f() {
+    // ...
+}
+
+// 实际上应该是
+void A::f(A* const this) {
+    // ...
+}
+```
+
+给出一个实际的例子：
+
+```cpp
+class Cart {
+public:
+    Cart(int item) {
+        this->total = item;
+    }
+
+    Cart& addItem(int itemPrice) {
+        total += itemPrice;
+        return *this;
+    }
+
+private:
+    int total;
+}
+```
+
+首先创建一个 `Cart` 实例 `myCart`:
+
+```cpp
+Cart myCart(10);
+```
+
+当调用函数 `myCart.addItem(100)` 的时候，编译器将我们的函数转换成了：
+
+```cpp
+myCart.addItem(&myCart, 100);
+```
+
+该 `addItem` 函数实际的定义应该是：
+
+```cpp
+Cart& addItem(Cart* const this, int itemPrice) {
+    this->total += itemPrice;
+    return *this;
+}
+```
+
+## 什么时候使用类的 this pointer
+
+>https://stackoverflow.com/questions/993352/when-should-i-make-explicit-use-of-the-this-pointer
+
+通常来说不需要使用 this pointer, 正常的访问类的成员变量，`this->` 是隐式的。如果 local variable 和类中已经存在的成员重名的话，需要使用 this->member 来表明要使用的是类的成员。
+
+例如对于类中的一个函数：
+
+```cpp
+class A
+{
+public:
+    int a;
+
+    void f() {
+        a = 4;
+        int a = 5;
+        cout << a << endl;
+        cout << this->a << endl;
+    }
+};
+```
+
+另一个重名的示例：
+
+```cpp
+class A{
+public:
+    void setx(int x){
+        this->x = x;
+    }
+private:
+    int x;
+}
+```
+
+然而在类的构造函数中使用 initializer list (initialization list) 初始化类成员的时候不需要考虑重名情况下加 this 指针的问题：
+
+```cpp
+class A {
+public:
+    // needed to add this pointer
+    A(int num, string str)  {
+        this->num = num;
+        this->str = str;
+    };
+
+    // initialize A::num = num, A::str = str
+    A(int num, string str): num(num), str(str) {
+    };
+
+private:
+    int num;
+    string str;
+};
 ```
