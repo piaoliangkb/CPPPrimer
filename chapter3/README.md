@@ -244,7 +244,7 @@ for (decltype(s.zize()) index = 0; index != s.size() && !isspace(s[index]); ++in
 
 从一个字符串中查询是否存在某个字符串，返回初始位置类型为`std::size_t`，否则返回结尾位置`std::string::npos`.
 
-![](https://ws1.sinaimg.cn/large/7e197809ly1g34brby7ijj20pd072gm6.jpg)
+![](https://tva1.sinaimg.cn/large/7e197809ly1g34brby7ijj20pd072gm6.jpg)
 
 > leetcode 771
 
@@ -368,9 +368,9 @@ s.insert(11, "5th"); // s = "c++ primer 5th edition"
 s.replace(11, 3, "5th");
 ```
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7r4dfknilj20sh0lxtg0.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7r4dfknilj20sh0lxtg0.jpg)
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7r4e1hek5j20sl0b4q52.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7r4e1hek5j20sl0b4q52.jpg)
 
 ##### 9.5.3 string 搜索
 
@@ -406,9 +406,9 @@ auto pos2 = code.find_last_not_of(numbers);   // pos2 = 10
 auto pos3 = code.find_first_not_of("123zxcvb"); // pos3 = string::npos
 ```
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7rr9vppp8j20se097juh.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7rr9vppp8j20se097juh.jpg)
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7rra7eeivj20sf07wjtk.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7rra7eeivj20sf07wjtk.jpg)
 
 其中每个操作都可以指定一个开始搜索的位置 `pos`
 
@@ -475,7 +475,7 @@ found string [anna] at index 8
 
 `compare` 函数的几种参数形式：
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7rzutdmjsj20sh0bm77i.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7rzutdmjsj20sh0bm77i.jpg)
 
 ##### 9.5.5 数值和 string 转换
 
@@ -488,7 +488,7 @@ std::cout << s << std::endl; // 3.141591
 double dd = std::stod(s);    // dd = 3.14159
 ```
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7s4kf2vmmj20uu0elq8t.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7s4kf2vmmj20uu0elq8t.jpg)
 
 转换函数如上图所示，
 
@@ -1125,7 +1125,7 @@ vector<int> v(begin(arr), end(arr));
 vector<int> v2(arr+1, arr+3);         //拷贝数组arr[1], arr[2]
 ```
 
-![](https://ws1.sinaimg.cn/large/7e197809ly1g2spwl1g1bj20tx02q0tl.jpg)
+![](https://tva1.sinaimg.cn/large/7e197809ly1g2spwl1g1bj20tx02q0tl.jpg)
 
 ## 3.6 多维数组
 

@@ -521,7 +521,7 @@ v2 > v1; // true
 
 ### 9.3.1 向顺序容器添加元素
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7eexzwxsyj20tx0o77e7.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7eexzwxsyj20tx0o77e7.jpg)
 
 #### push_back
 
@@ -746,7 +746,7 @@ iter1 = lst.erase(iter1, iter2);
 
 forward_list 是一个单向链表，进行删除操作时，发生如图所示情况：
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7gimsk0twj20qk07ogmm.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7gimsk0twj20qk07ogmm.jpg)
 
 为了在单向链表中添加或删除一个元素，我们需要访问其前驱：
 
@@ -756,7 +756,7 @@ forward_list 是一个单向链表，进行删除操作时，发生如图所示�
 
 - 定义了 `before_begin` 用来返回首前(off-the-beginning)迭代器，用来在链表首元素之前添加删除元素。
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7grnvnr9ej20u10g1tg0.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7grnvnr9ej20u10g1tg0.jpg)
 
 例如，使用迭代器在一个 forward_list 删除奇数元素：
 
@@ -869,7 +869,7 @@ c.resize(n, t);  // 调整大小为 n 个元素，对新元素初始化为 t
 
 - 所有容器适配器都支持的操作如下：
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7svuw26fdj20uy0f9aen.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7svuw26fdj20uy0f9aen.jpg)
 
 - 所有适配器都a要求容器具有添加和删除元素的能力，所以不能使用 `array`。
 

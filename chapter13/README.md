@@ -525,7 +525,7 @@ HasPtr q(p); // p 和 q 都指向无效内存
 
 例子：
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8n6vzjacsj20rh03zacb.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g8n6vzjacsj20rh03zacb.jpg)
 
 ### 13.1.5 使用=default
 
@@ -1134,7 +1134,7 @@ StrVec::StrVec(StrVec &&s) noexcept
 
 - 否则使用拷贝构造函数来防止发生异常时回退到原来的状态。
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8rjn2lmalj20sg0ohgy3.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g8rjn2lmalj20sg0ohgy3.jpg)
 
 #### 移动赋值运算符
 

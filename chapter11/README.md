@@ -183,7 +183,7 @@ multiset<Sales_data, decltype(compareISBN)*> bookstore(compareISBN);
 `p1 relop p2` | 关系运算符(<, >, <= , >=) 按照字典序定义
 `p1 == p2`/ `p1 != p2` | 利用元素的 `==` 运算符比较
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g83utvololj20w80k2q9r.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g83utvololj20w80k2q9r.jpg)
 
 #### 创建 pair 对象
 
@@ -310,7 +310,7 @@ mp.emplace(pair<string, int>("didi", 4));
 mp.emplace(map<string, int>::value_type("func", 5));
 ```
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g869f28g8fj20se0evafg.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g869f28g8fj20se0evafg.jpg)
 
 - 返回值是一个 `pair`，首元素是一个迭代器，指向给定关键字的元素；第二个元素是一个 `bool` 值，指示插入是否成功。
 

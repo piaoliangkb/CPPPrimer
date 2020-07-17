@@ -160,7 +160,7 @@ int main()
 
 输出结果：
 
-![](https://ws1.sinaimg.cn/large/7e197809ly1g15zulj3c0j20u20b50tu.jpg)
+![](https://tva1.sinaimg.cn/large/7e197809ly1g15zulj3c0j20u20b50tu.jpg)
 
 #### unsigned int test code 
 

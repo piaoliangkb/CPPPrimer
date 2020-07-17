@@ -91,7 +91,7 @@ x == (y + z);
 
 ### 可以被重载的运算符和不能被重载的运算符
 
-![image.png](https://ws1.sinaimg.cn/mw690/7e197809ly1g8wbn9ppj6j20lb07cwfp.jpg)
+![image.png](https://tva1.sinaimg.cn/mw690/7e197809ly1g8wbn9ppj6j20lb07cwfp.jpg)
 
 ### 直接调用重载的运算符函数
 
@@ -546,7 +546,7 @@ negate<int> intnegate;
 auto res = intnegate(-40); // res = 40
 ```
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8wldw91sej20nx07ndhg.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g8wldw91sej20nx07ndhg.jpg)
 
 #### 在算法中使用标准库对象
 

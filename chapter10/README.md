@@ -464,7 +464,7 @@ for_each(v.begin(), v.end(), [=, &os](const string& s) { os << s << " ";});
 
 此外必须要求显式捕获的变量和隐式捕获的变量采用不同的方式（值捕获，引用捕获）
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g81c3vnfn7j20so0hejxn.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g81c3vnfn7j20so0hejxn.jpg)
 
 #### lambda 修改值捕获参数
 
@@ -659,7 +659,7 @@ cout << accumulate(int_it, eof, 0) << endl;
 
 - `istream_iterator` 的操作：
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8282553rgj20sl0blgpd.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g8282553rgj20sl0blgpd.jpg)
 
 - `istream-iterator` 允许懒惰求值
 
@@ -677,7 +677,7 @@ cout << accumulate(int_it, eof, 0) << endl;
 
 - `ostream_iterator` 操作：
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g828ctezmaj20si0a6adc.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g828ctezmaj20si0a6adc.jpg)
 
 利用 `ostream_iterator` 来输出值的序列：
 
@@ -703,7 +703,7 @@ copy(v.cbegin(), v.cend(), ostream_iterator<int>(cout, " "));
 
 除了 `forward_list` 之外，其他容器都支持反向迭代器，可以调用 `rbegin`, `rend`, `crbegin`, `crend` 来获得反向迭代器。
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g82alfpmw9j20n108g75k.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g82alfpmw9j20n108g75k.jpg)
 
 - 反向迭代器需要递减运算符，除了 `forward_list` 之外，标准容器上的其他迭代器都既支持递增运算和递减运算。
 
@@ -728,7 +728,7 @@ cout << string(line.crbegin(), comma) << endl;   // 错误，将逆序打出
 cout << string(comma.base(), line.cend()) << endl;
 ```
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g82au0nicij20jk07dwfe.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g82au0nicij20jk07dwfe.jpg)
 
 ## 10.5 泛型算法结构
 
@@ -736,11 +736,11 @@ cout << string(comma.base(), line.cend()) << endl;
 
 算法要求的迭代器操作可以分为5个迭代器类别(iterator category)
 
-![image.png](https://ws1.sinaimg.cn/mw690/7e197809ly1g82bhsnaa5j20t407dac2.jpg)
+![image.png](https://tva1.sinaimg.cn/mw690/7e197809ly1g82bhsnaa5j20t407dac2.jpg)
 
 ### 10.5.2 算法形参模式
 
-![image.png](https://ws1.sinaimg.cn/mw690/7e197809ly1g82bovy20qj20dz03sgm9.jpg)
+![image.png](https://tva1.sinaimg.cn/mw690/7e197809ly1g82bovy20qj20dz03sgm9.jpg)
 
 ## 10.6 list, forward_list 特定容器算法
 
@@ -778,7 +778,7 @@ cout << string(comma.base(), line.cend()) << endl;
 
 `list.splice(args)` 或者 `flse.splice_after(args)` 的参数：
 
-![image.png](https://ws1.sinaimg.cn/mw690/7e197809ly1g82c51cl0fj20se0cxwjl.jpg)
+![image.png](https://tva1.sinaimg.cn/mw690/7e197809ly1g82c51cl0fj20se0cxwjl.jpg)
 
 #### 链表特有的操作会改变容器
 

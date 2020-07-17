@@ -1057,7 +1057,7 @@ void print(const int ia[], size_t size)
 
 或见代码 : NDEBUG_example.cpp
 
-![](https://ws1.sinaimg.cn/large/7e197809ly1g5vjnrio11j20uz08ywgq.jpg)
+![](https://tva1.sinaimg.cn/large/7e197809ly1g5vjnrio11j20uz08ywgq.jpg)
 
 ## 6.6 函数匹配
 

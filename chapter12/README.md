@@ -390,7 +390,7 @@ delete p; // p 指向一个动态分配的对象或者空指针
 
 若释放一块并非 new 分配的内存，或者将相同的指针值释放多次，行为是未定义的。
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g88k0xra0jj20gr05zgmy.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g88k0xra0jj20gr05zgmy.jpg)
 
 对于上述错误的 delete 表达式，大多数编译器会编译通过。编译器不能分辨一个指针指向的是静态的还是动态分配的对象。也不能分辨一个指针所指向的内存是否已经释放。
 
@@ -475,9 +475,9 @@ shared_ptr<int> p2(new int(1024));
 
 - `p.reset(q, d)`：同上，但是调用 d 而不是 `delete` 来释放 q。
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g898cz3pfnj20qh07e0v4.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g898cz3pfnj20qh07e0v4.jpg)
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g898d99b8cj20qh05tabw.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g898d99b8cj20qh05tabw.jpg)
 
 #### 智能指针的 get() 方法
 
@@ -1012,7 +1012,7 @@ alloc.deallocate(p, n);
 
 标准库为 `allocator` 定义了两个伴随算法，都定义在 memory 中，用来在未初始化内存中创建对象：
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8c21f8u24j20p40botc8.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g8c21f8u24j20p40botc8.jpg)
 
 例如，将一个 vector<int> 的内容拷贝到两倍大小的动态内存中，后半部分使用某个元素填充：
 

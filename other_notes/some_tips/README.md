@@ -531,7 +531,7 @@ shared_ptr<int> pi(new int(42));
 
 下边一段代码：
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g8gijp1etyj20op0h4tcd.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g8gijp1etyj20op0h4tcd.jpg)
 
 其中 wm 的定义为：
 

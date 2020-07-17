@@ -99,7 +99,7 @@ cout << i << " " << ++i << endl;
 
 ## 4.2 算术运算符
 
-![](https://ws1.sinaimg.cn/large/7e197809ly1g34do3l4unj20yi0cvwgo.jpg)
+![](https://tva1.sinaimg.cn/large/7e197809ly1g34do3l4unj20yi0cvwgo.jpg)
 
 算符优先级从上到下依次减小。左结合律表示：优先级相同时按照从左到右的顺序进行组合。
 
@@ -182,7 +182,7 @@ int main()
 
 - 运算对象和求值结果都是 ***右值*** 。
 
-![](https://ws1.sinaimg.cn/large/7e197809gy1g35veefqqpj20vw0eun04.jpg)
+![](https://tva1.sinaimg.cn/large/7e197809gy1g35veefqqpj20vw0eun04.jpg)
 
 ### 逻辑与，逻辑或
 
@@ -435,7 +435,7 @@ unsigned long pass27 = 1 << 27;
 
 >https://zh.cppreference.com/w/cpp/language/types
 
-![](https://ws1.sinaimg.cn/large/7e197809ly1g3iaeqy762j20lu0903yz.jpg)
+![](https://tva1.sinaimg.cn/large/7e197809ly1g3iaeqy762j20lu0903yz.jpg)
 
 - unsigned int 至少为16位
 
@@ -647,7 +647,7 @@ reinterpret_cast 通常为运算对象的位模式提供较低层次上的重新
 
 ## 4.12 运算符优先级表
 
-![](https://ws1.sinaimg.cn/large/7e197809ly1g5a7l2kh9vj20mn0ltgpu.jpg)
+![](https://tva1.sinaimg.cn/large/7e197809ly1g5a7l2kh9vj20mn0ltgpu.jpg)
 
-![](https://ws1.sinaimg.cn/large/7e197809ly1g5a7lvpd90j20on0y5jyg.jpg)
+![](https://tva1.sinaimg.cn/large/7e197809ly1g5a7lvpd90j20on0y5jyg.jpg)
 

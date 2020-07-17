@@ -61,9 +61,9 @@ sstream | istringstream, wistringstream, ostringstream, wostringstream, stringst
 
 我们可以控制和访问流的条件状态。
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7442iquh6j20n605dab7.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7442iquh6j20n605dab7.jpg)
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g7442ynphyj20n50au0w5.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g7442ynphyj20n50au0w5.jpg)
 
 确定一个流对象状态最简单的方法是将它作为一个条件来使用：
 
@@ -279,7 +279,7 @@ binary | 以二进制方式进行 IO
 
 #### 指定文件模式的限制
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g74ymvmvz5j20tj0e0gr9.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g74ymvmvz5j20tj0e0gr9.jpg)
 
 #### 以 out 方式打开文件会丢弃已有数据
 
@@ -318,7 +318,7 @@ strm.str(s) | 将 string s 拷贝到 strm 中。返回 void
 
 考虑这样的数据：
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g754waa0wgj20gi03kdgb.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g754waa0wgj20gi03kdgb.jpg)
 
 我们如果从 cin 中逐行读取这样的数据，可以使用 istringstream 处理每一行的字符串：
 

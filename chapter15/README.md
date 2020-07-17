@@ -1110,7 +1110,7 @@ public:
 
 - `OrQuery` `AndQuery` 是二元查询，所以我们定义一个名为 `BinaryQuery` 的抽象基类，让这两个类继承于 `BinaryQuery`.
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g94jpukvudj20jc0a73zi.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g94jpukvudj20jc0a73zi.jpg)
 
 #### 将层次关系隐藏于接口类中
 
@@ -1130,7 +1130,7 @@ Query q = Query("fiery") & Query("bird") | Query("wind");
 
 - 构造函数生成一个新的 WordQuery 对象。
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g94jxw9lsgj20km0b8wg5.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g94jxw9lsgj20km0b8wg5.jpg)
 
 ### 15.9.2 Query_base 和 Query 类
 
@@ -1370,7 +1370,7 @@ inline Query operator|(const Query &lhs, const Query &rhs) {
 
 #### 练习15.34
 
-![image.png](https://ws1.sinaimg.cn/large/7e197809ly1g94jxw9lsgj20km0b8wg5.jpg)
+![image.png](https://tva1.sinaimg.cn/large/7e197809ly1g94jxw9lsgj20km0b8wg5.jpg)
 
 a. 列出处理表达式过程中执行的所有构造函数：
 
