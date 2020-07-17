@@ -67,6 +67,7 @@
 - [去除 string 首尾的标点符号 (punctuation)](#去除-string-首尾的标点符号-punctuation)
 - [this pointer](#this-pointer)
 - [什么时候使用类的 this pointer](#什么时候使用类的-this-pointer)
+- [二分法实现 lower_bound 和 upper_bound](#二分法实现-lower_bound-和-upper_bound)
 
 <!-- /TOC -->
 --------------------------------
@@ -1303,4 +1304,61 @@ private:
     int num;
     string str;
 };
+```
+
+
+## 二分法实现 lower_bound 和 upper_bound
+
+在有序数组中
+
+- lower_bound：返回最左侧的 x >= target 的 index
+
+- upper_bound：返回最左侧的 x > target 的 index
+
+可以使用二分查找来实现
+
+>参考：https://leetcode-cn.com/problems/search-insert-position/
+
+具体实现见文件夹下的 [bound.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/bound.cpp)
+
+具体的想法就是两个 `target` 和 `vector[mid]` 的判断条件，加入等号判断来左右逼近。注意退出 while 条件时 low 和 high 的关系。
+
+```cpp
+int lower_bd(vector<int> &v, int target) {
+    int low = 0, high = v.size() - 1;
+
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+
+        if (target > v[mid]) {
+            low = mid + 1;
+        }
+        // 如果 target 还小于 mid，就让 high 一直向左逼近
+        // 一直到最后，high 会到 target 的左侧，
+        // 退出循环时，low = high + 1 所在的位置就是最小的等于 target 的
+        if (target <= v[mid]) {
+            high = mid - 1;
+        }
+    }
+    return low;
+}
+
+int upper_bd(vector<int> &v, int target) {
+    int low = 0, high = v.size() - 1;
+
+    while (low <= high) {
+        int mid = low + (high - low) / 2;
+
+        // 如果 target 比 mid 大，就让 low 一直向右逼近
+        // 一直到最后，low 会到 target 的右侧
+        // 恰好是第一个大于 target 的位置
+        if (target >= v[mid]) {
+            low = mid + 1;
+        }
+        if (target < v[mid]) {
+            high = mid - 1;
+        }
+    }
+    return low;
+}
 ```
