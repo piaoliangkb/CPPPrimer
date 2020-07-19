@@ -68,6 +68,7 @@
 - [this pointer](#this-pointer)
 - [什么时候使用类的 this pointer](#什么时候使用类的-this-pointer)
 - [二分法实现 lower_bound 和 upper_bound](#二分法实现-lower_bound-和-upper_bound)
+- [类没有任何变量和函数/类只含有构造函数和析构函数/类只有虚函数 sizeof 各占多少空间](#类没有任何变量和函数类只含有构造函数和析构函数类只有虚函数-sizeof-各占多少空间)
 
 <!-- /TOC -->
 --------------------------------
@@ -1360,5 +1361,46 @@ int upper_bd(vector<int> &v, int target) {
         }
     }
     return low;
+}
+```
+
+## 类没有任何变量和函数/类只含有构造函数和析构函数/类只有虚函数 sizeof 各占多少空间
+
+>剑指offer p23
+
+具体见代码 `sizeof_class.cpp`
+
+对于一个空类，它的实例占一个字节的空间。由编译器决定。
+
+对于只有构造函数和析构函数的类，实例占一个字节的空间。函数的地址和类的实例无关。
+
+只有一个虚析构函数的类，实例有一个虚函数表指针。在 64 位的机器上，一个指针占 8 字节的空间。
+
+```cpp
+class A{
+
+};
+
+class B {
+public:
+    B(){}
+    ~B(){}
+};
+
+class C {
+public:
+    C(){}
+    virtual ~C() {}
+};
+
+int main() {
+    A a;
+    cout << "Empty class instace sizeof = " << sizeof(a) << endl; // 1 bytes##
+
+    B b;
+    cout << "Class with empty ctor, dtor sizeof = " << sizeof(b) << endl;  // 1 bytes
+
+    C c;
+    cout << "Class with virtual dtor, sizeof = " << sizeof(c) << endl; // 8 bytes
 }
 ```
