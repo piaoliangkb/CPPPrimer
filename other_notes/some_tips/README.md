@@ -69,6 +69,7 @@
 - [什么时候使用类的 this pointer](#什么时候使用类的-this-pointer)
 - [二分法实现 lower_bound 和 upper_bound](#二分法实现-lower_bound-和-upper_bound)
 - [类没有任何变量和函数/类只含有构造函数和析构函数/类只有虚函数 sizeof 各占多少空间](#类没有任何变量和函数类只含有构造函数和析构函数类只有虚函数-sizeof-各占多少空间)
+- [sizeof vector](#sizeof-vector)
 
 <!-- /TOC -->
 --------------------------------
@@ -717,7 +718,7 @@ https://github.com/piaoliangkb/cppprimer/blob/master/chapter13/String.h
 
 ref: [A trivial String class that designed for write-on-paper in an interview](https://github.com/chenshuo/recipes/blob/fcf9486f5155117fb8c36b6b0944c5486c71c421/string/StringTrivial.h)
 
-https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/String.h
+https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/String.h
 
 ## 派生类的析构函数只负责销毁自己的成员
 
@@ -847,15 +848,15 @@ extern 修饰的变量存在，但是可能不在当前的编译单元，在链�
 
 例子：
 
-[static_and_extern.h](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/static_and_extern.h)
+[static_and_extern.h](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/static_and_extern.h)
 
-[sae_test1.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test1.cpp)
+[sae_test1.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/sae_test1.cpp)
 
-[sae_test2.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test2.cpp)
+[sae_test2.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/sae_test2.cpp)
 
-[sae_test3.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test3.cpp)
+[sae_test3.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/sae_test3.cpp)
 
-[sae_test4.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/sae_test4.cpp)
+[sae_test4.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/sae_test4.cpp)
 
 ## RTTI(Run-Time Type Identification) and typeid
 
@@ -939,9 +940,9 @@ struct Widget::impl {
 
 例子：
 
-[User.h](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/User.h)
-[User.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/User.cpp)
-[test_User.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/some_tips/test_User.cpp)
+[User.h](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/User.h)
+[User.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/User.cpp)
+[test_User.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/test_User.cpp)
 
 ```cpp
 // just compile cpp files
@@ -1320,7 +1321,7 @@ private:
 
 >参考：https://leetcode-cn.com/problems/search-insert-position/
 
-具体实现见文件夹下的 [bound.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/some_tips/bound.cpp)
+具体实现见文件夹下的 [bound.cpp](https://github.com/piaoliangkb/cppprimer/blob/master/other_notes/other_notes/some_tips/bound.cpp)
 
 具体的想法就是两个 `target` 和 `vector[mid]` 的判断条件，加入等号判断来左右逼近。注意退出 while 条件时 low 和 high 的关系。
 
@@ -1370,13 +1371,17 @@ int upper_bd(vector<int> &v, int target) {
 
 具体见代码 `sizeof_class.cpp`
 
-对于一个空类，它的实例占一个字节的空间。由编译器决定。
+对于一个空类，它的实例占一个字节的空间。由编译器决定。为了每个实例在内存中都有一个独一无二的地址加以区分，**编译器给每个空类隐含的加一个字节**。
 
 对于只有构造函数和析构函数的类，实例占一个字节的空间。函数的地址和类的实例无关。
 
 只有一个虚析构函数的类，实例有一个虚函数表指针。在 64 位的机器上，一个指针占 8 字节的空间。
 
 ```cpp
+#include <iostream>
+
+using namespace std;
+
 class A{
 
 };
@@ -1394,13 +1399,68 @@ public:
 };
 
 int main() {
+    cout << "Sizeof a empty class = " << sizeof(A) << endl;  // 1 bytes
     A a;
-    cout << "Empty class instace sizeof = " << sizeof(a) << endl; // 1 bytes##
+    cout << "Empty class instace sizeof = " << sizeof(a) << endl; // 1 bytes
+    A aa;
+    // address of two different instances are different
+    cout << "Address of instance a: " << &a << endl;
+    cout << "Address of instance aa: " << &aa << endl;
 
+    cout << "Sizeof a class with ctor, dtor = " << sizeof(B) << endl;  // 1 bytes
     B b;
     cout << "Class with empty ctor, dtor sizeof = " << sizeof(b) << endl;  // 1 bytes
 
+    cout << "Sizeof a class with virtual function = " << sizeof(C) << endl;  // 8 bytes
     C c;
     cout << "Class with virtual dtor, sizeof = " << sizeof(c) << endl; // 8 bytes
 }
 ```
+
+程序输出为：
+
+```
+Sizeof a empty class = 1
+Empty class instace sizeof = 1
+Address of instance a: 0x7ffee9c4d348
+Address of instance aa: 0x7ffee9c4d340
+Sizeof a class with ctor, dtor = 1
+Class with empty ctor, dtor sizeof = 1
+Sizeof a class with virtual function = 8
+Class with virtual dtor, sizeof = 8
+```
+
+## sizeof vector
+
+>https://stackoverflow.com/questions/34024805/c-sizeof-vector-is-24
+>
+>https://www.zhihu.com/question/34955591
+
+sizeof 是一个运算符，编译期间进行运算。用来获得一个类型或者变量占用的真实字节大小。
+
+对一个 vector 使用 sizeof 运算符，在 64 bits 机器上得到的结果是 24 bytes:
+
+```cpp
+int main() {
+    vector<int> a;
+    cout << sizeof(a) << endl;  // 24
+
+    a.push_back(1);
+    cout << sizeof(a) << endl;  // 24
+
+    a.push_back(2);
+    cout << sizeof(a) << endl;  // 24
+
+    return 0;
+}
+```
+
+The 24 size you see can be explained as 3 pointers (each pointer is 8 bytes in size on 64-bit architectures; so you have 3 x 8 = 24 bytes):
+
+- begin of vector
+
+- end of vector (size，或者用一个 size_t 代替指针)
+
+- end of reserved memory for vector (capacity，或者用一个 size_t 来代替指针)
+
+此外 vector 对象还有一个 allocator (可能少于 8 个字节)，但是 allocator 被隐藏了。
