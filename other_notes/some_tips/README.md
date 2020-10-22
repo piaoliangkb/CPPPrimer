@@ -70,6 +70,7 @@
 - [二分法实现 lower_bound 和 upper_bound](#二分法实现-lower_bound-和-upper_bound)
 - [类没有任何变量和函数/类只含有构造函数和析构函数/类只有虚函数 sizeof 各占多少空间](#类没有任何变量和函数类只含有构造函数和析构函数类只有虚函数-sizeof-各占多少空间)
 - [sizeof vector](#sizeof-vector)
+- [convert double/float to string without trailing zeros](#convert-doublefloat-to-string-without-trailing-zeros)
 
 <!-- /TOC -->
 --------------------------------
@@ -1464,3 +1465,58 @@ The 24 size you see can be explained as 3 pointers (each pointer is 8 bytes in s
 - end of reserved memory for vector (capacity，或者用一个 size_t 来代替指针)
 
 此外 vector 对象还有一个 allocator (可能少于 8 个字节)，但是 allocator 被隐藏了。
+
+## convert double/float to string without trailing zeros
+
+将 double 或者 float 转化成 string 输出，如果直接使用 `to_string()` 方法的话，会保留浮点数的后置0。例如：
+
+```cpp
+#include <iostream>
+#include <sstream>
+
+using namespace std;
+
+int main() {
+    double d = 3.13;
+    float f = 2.1;
+
+    cout << "d string is: " << to_string(d) << ", f string is: " << to_string(f) << endl;
+}
+// d string is: 3.130000, f string is: 2.100000
+```
+
+可以创建一个 `stringstream` 向该 stream 写入浮点数，然后使用 `stringstream.str()` 方法返回 stringstream 中存储的字符串的拷贝，输出没有后置 0 的字符串：
+
+```cpp
+#include <iostream>
+#include <sstream>
+
+using namespace std;
+
+int main() {
+    double d = 3.13;
+    float f = 2.1;
+
+    cout << "d string is: " << to_string(d) << ", f string is: " << to_string(f) << endl;
+
+    stringstream ss;
+    // 向 stringstream 写入内容
+    ss << d;
+    cout << "d string without trailing zeros is: " << ss.str() << endl;
+    // 继续向 stringstream 写入内容，之前写入的内容仍然存在
+    ss << f;
+    cout << "f string without trailing zeros is: " << ss.str() << endl;
+}
+// d string without trailing zeros is: 3.13
+// f string without trailing zeros is: 3.132.1
+```
+
+注意，第二次向 stringstream 输出内容时，第一次的东西并没有变动。所以不能复用，如果要复用的话，需要删除 stringstream 中上一次写入的内容。
+
+如果想要重新使用该 stringstream，需要删除之前的内容，删除的方式就是设置：
+
+>https://stackoverflow.com/questions/20731/how-do-you-clear-a-stringstream-variable
+
+```cpp
+ss.str("");
+```

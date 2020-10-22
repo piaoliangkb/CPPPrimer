@@ -303,7 +303,7 @@ ssstream 头文件定义了三个类型来支持内存 IO，这些类型可以�
 
 - ostringstream 向 string 写入数据
 
-- 头文件 stringstream 既可以从 string 读数据也可以向 string 写数据
+- stringstream 既可以从 string 读数据也可以向 string 写数据
 
 ### stringstream 的操作
 
@@ -313,6 +313,8 @@ sstream strm; | strm 是一个未绑定的 stringstream 对象
 sstream strm(s); | strm 是一个 sstream 对象，保存 string s 的一个拷贝。该构造函数是explicit的
 strm.str() | 返回 strm 保存的 string 的拷贝
 strm.str(s) | 将 string s 拷贝到 strm 中。返回 void
+
+- tips: 清空 stringstream 的方法 `ss.str("")`
 
 ### 使用 istringstream
 
@@ -333,8 +335,11 @@ vector<PersonInfo> people;
 while (getline(cin, line)) {
     PersonInfo info;
     istringstream record(line);
-    recore >> info.name;
+    // 将输入流的值写入到 info.name
+    record >> info.name;
     while (record >> word) {
+        // 将输入流的值循环写入到 word
+        // 即一个用户可能有多个电话号码
         info.phones.push_back(word);
     }
     people.push_back(info);
@@ -353,8 +358,14 @@ while (getline(cin, line)) {
 for (const auto &item: people) {
     ostringstream rightnums, badnums;
     for (const auto &phone: item.phones) {
-        if (!valid(phone)) badnums << " " << phone;
-        else rightnums << " " << format(phones);
+        if (!valid(phone)) {
+            // 将后续的空格和 phone 添加到输出流
+            badnums << " " << phone;
+        }
+        else {
+            // 添加到输出流
+            rightnums << " " << format(phones);
+        }
     }
 
     if (badnums.str().empty()) {
