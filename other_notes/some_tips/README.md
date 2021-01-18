@@ -71,6 +71,7 @@
 - [类没有任何变量和函数/类只含有构造函数和析构函数/类只有虚函数 sizeof 各占多少空间](#类没有任何变量和函数类只含有构造函数和析构函数类只有虚函数-sizeof-各占多少空间)
 - [sizeof vector](#sizeof-vector)
 - [convert double/float to string without trailing zeros](#convert-doublefloat-to-string-without-trailing-zeros)
+- [std::unordered_map 为什么慢](#stdunordered_map-为什么慢)
 
 <!-- /TOC -->
 --------------------------------
@@ -1520,3 +1521,11 @@ int main() {
 ```cpp
 ss.str("");
 ```
+
+## std::unordered_map 为什么慢
+
+- youtube 讲解：https://www.youtube.com/watch?v=nx5g5bwtUuA
+
+- Google 开源 flat_hash_map: https://github.com/abseil/abseil-cpp/blob/master/absl/container/flat_hash_map.h
+
+- Folly F14Map: https://github.com/facebook/folly/blob/master/folly/container/F14Map.h
