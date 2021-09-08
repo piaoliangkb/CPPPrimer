@@ -72,6 +72,7 @@
 - [sizeof vector](#sizeof-vector)
 - [convert double/float to string without trailing zeros](#convert-doublefloat-to-string-without-trailing-zeros)
 - [std::unordered_map 为什么慢](#stdunordered_map-为什么慢)
+- [std::thread 作为 std::unordered_map 的 value](#stdthread-作为-stdunordered_map-的-value)
 
 <!-- /TOC -->
 --------------------------------
@@ -1529,3 +1530,30 @@ ss.str("");
 - Google 开源 flat_hash_map: https://github.com/abseil/abseil-cpp/blob/master/absl/container/flat_hash_map.h
 
 - Folly F14Map: https://github.com/facebook/folly/blob/master/folly/container/F14Map.h
+
+
+## std::thread 作为 std::unordered_map 的 value
+
+https://www.zhihu.com/question/443554916
+
+`std::thread` 不支持复制和赋值，可以使用 `std::move` 移动。
+
+解决方案：
+
+1. `*thread` or `std::unique_ptr` 作为 map 的 value
+
+```cpp
+
+```
+
+2. `thread` 作为 map 的 value 使用 `std::move`
+
+```cpp
+std::unordered_map<std::string, std::thread> m;
+std::thread t{f, "hello"};
+m["myfunc"] = std::move(t);
+
+m["myfunc"].join();
+```
+
+3. 使用 lambda 函数隐式构造
