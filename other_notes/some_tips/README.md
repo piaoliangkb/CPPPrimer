@@ -1556,6 +1556,27 @@ m["myfunc"].join();
 
 ## pair<T, T> 作为 unordered_map, unordered_set 的 key
 
+unordered_map, unordered_set 需要 hash function，但是 pair 类型并不提供 hash 函数，所以需要自己定义。
+
+```cpp
+struct SimpleHash {
+    size_t operator()(const std::pair<int, int>& p) const {
+        return p.first ^ p.second;
+    }
+};
+
+std::unordered_set<std::pair<int, int>, SimpleHash> S;
+S.insert(std::make_pair(0, 1));
+```
+
 - https://stackoverflow.com/questions/21288345/unordered-set-of-pairs-compilation-error
 
 - https://stackoverflow.com/questions/30419681/why-cant-i-use-pair-as-key-of-unordered-set-unordered-map
+
+为什么 set, map 可以使用 pair 作为 key?
+
+set, map 内置的数据结构为红黑树，没有使用 hashtable.
+
+- https://gist.github.com/justinmeiners/57f38bddae9029db3c6401fae113bd7c
+
+- https://stackoverflow.com/questions/5288320/why-is-stdmap-implemented-as-a-red-black-tree
