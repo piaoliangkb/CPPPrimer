@@ -1,10 +1,3 @@
-<!--
- * @Description: In User Settings Edit
- * @Author: your name
- * @Date: 2019-05-18 23:45:30
- * @LastEditTime: 2019-05-18 23:45:30
- * @LastEditors: your name
- -->
 书写格式：
 
 ## 标题
@@ -16,7 +9,9 @@
 ```
 代码
 ```
+
 --------------------------------
+
 ## 目录
 
 <!-- TOC -->
@@ -73,6 +68,7 @@
 - [convert double/float to string without trailing zeros](#convert-doublefloat-to-string-without-trailing-zeros)
 - [std::unordered_map 为什么慢](#stdunordered_map-为什么慢)
 - [std::thread 作为 std::unordered_map 的 value](#stdthread-作为-stdunordered_map-的-value)
+- [pair<T, T> 作为 unordered_map, unordered_set 的 key](#pairt-t-作为-unordered_map-unordered_set-的-key)
 
 <!-- /TOC -->
 --------------------------------
@@ -1557,3 +1553,9 @@ m["myfunc"].join();
 ```
 
 3. 使用 lambda 函数隐式构造
+
+## pair<T, T> 作为 unordered_map, unordered_set 的 key
+
+- https://stackoverflow.com/questions/21288345/unordered-set-of-pairs-compilation-error
+
+- https://stackoverflow.com/questions/30419681/why-cant-i-use-pair-as-key-of-unordered-set-unordered-map
